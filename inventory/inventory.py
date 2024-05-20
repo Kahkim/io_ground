@@ -1,8 +1,8 @@
 from configs import * 
 
 class Inventory:
-    def __init__(self):
-        self.num_stock = 0
+    def __init__(self, init_n):
+        self.num_stock = init_n
     
     def fill_in(self, n):
         self.num_stock = min(self.num_stock+n, MAX_STOCK)
