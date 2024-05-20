@@ -71,7 +71,7 @@ def main():
 
     for day, i in zip(company.date_list[:num_days], range(num_days)):
         
-        print(f'day {day} {'-'*20} {i}')
+        print(f'day {day} {"-"*20} {i}')
         print(f'begining')
         print(f'\t# inventory {f(company.inven.num_stock)}')
         print(f'\tbalance: ${f(company.balance)}')
