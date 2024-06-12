@@ -76,9 +76,9 @@ for p in range(1, 1000):
     if next_btn == None:
         break
 
+    conn.commit()
     time.sleep(30)
     
-conn.commit()
 
 # cur.execute('select * from Test')
 # ret = cur.fetchall()
