@@ -19,8 +19,8 @@ def save_to_csv(stock_data, filename):
         
 def main():
     ticker = "005930.KS"  # 삼성전자의 티커 (한국거래소: .KS)
-    start_date = "2023-04-01"  # 시작일
-    end_date = "2024-04-01"    # 종료일
+    start_date = "2024-04-01"  # 시작일
+    end_date = "2024-06-01"    # 종료일
 
     # 주식 데이터 가져오기
     stock_data = get_stock_data(ticker, start_date, end_date)
