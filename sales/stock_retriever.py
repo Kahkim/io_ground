@@ -52,8 +52,8 @@ def get_stock_price(stock_code, page):
 stock_code = "005930"
 
 import time
-import pymysql
-conn = pymysql.connect(host='192.168.0.3', user='io_ground', passwd='dkshk24@!', db='io_ground')
+import pymysql, sys_configs
+conn = pymysql.connect(host=sys_configs.HOST, user=sys_configs.USER, passwd=sys_configs.PASSWD, db=sys_configs.DB)
 
 cur = conn.cursor()
 
