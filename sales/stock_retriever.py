@@ -65,7 +65,7 @@ sql = """INSERT INTO    DEMANDS(DCODE, DATE, PRICE)
                         VALUES (%s, %s, %s)
                         ON DUPLICATE KEY UPDATE PRICE=VALUES(PRICE)"""
 
-for p in range(1, 1000):
+for p in range(1, 2):
     stocks, next_btn = get_stock_price(stock_code, p)
 
     for s in stocks:
