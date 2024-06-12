@@ -52,7 +52,11 @@ def get_stock_price(stock_code, page):
 stock_code = "005930"
 
 import time
-import pymysql, sys_configs
+import sys, os
+sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
+import sys_configs
+
+import pymysql 
 conn = pymysql.connect(host=sys_configs.HOST, user=sys_configs.USER, passwd=sys_configs.PASSWD, db=sys_configs.DB)
 
 cur = conn.cursor()
