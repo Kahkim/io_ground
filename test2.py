@@ -1,16 +1,22 @@
+# import pymysql
+# conn = pymysql.connect(host='192.168.0.3', user='io_ground', passwd='dkshk24@!', db='io_ground')
 
-inventory = 100 # global variable 전역변수
+# cur = conn.cursor()
 
-def sales():
-    global inventory
-    inventory = inventory - 10
-    print('sales inventory', inventory)
+# cur.execute("INSERT INTO Test(TYPE, Contents) VALUES ('AA','TEXT!!!')")
+# conn.commit()
 
-def production():
-    global inventory
-    inventory = inventory + 1000
-    print('production inventory', inventory)
+# cur.execute('select * from Test')
+# ret = cur.fetchall()
+# for r in ret:
+#     print(r)
 
-sales()
-production()
-print(inventory)
+# conn.close()
+
+import datetime
+
+date = datetime.datetime.strptime('2024-06-12', '%Y-%m-%d')
+print(date.weekday())
+
+next_day_date = date + datetime.timedelta(days=1)
+print(next_day_date)
