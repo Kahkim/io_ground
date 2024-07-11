@@ -6,4 +6,6 @@ INSERT INTO    DEMANDS(DCODE, DATE, PRICE)
                         ON DUPLICATE KEY UPDATE PRICE=VALUES(PRICE)
                         
                         
-select COUNT(*) from DEMANDS
+DESC DEMANDS
+
+SELECT * FROM DEMANDS

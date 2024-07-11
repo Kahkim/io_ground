@@ -20,3 +20,11 @@ print(date.weekday())
 
 next_day_date = date + datetime.timedelta(days=1)
 print(next_day_date)
+
+
+now = datetime.datetime.now()
+print(now)
+next_day_date = now + datetime.timedelta(days=1)
+print(next_day_date)
+next_day_date = now + datetime.timedelta(days=2)
+print(next_day_date)

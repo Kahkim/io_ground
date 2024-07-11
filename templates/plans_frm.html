@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:float="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>Home</title>
+    <link rel="stylesheet" href="/static/my.css" type="text/css" />
+</head>
+
+
+<body>
+    <p>
+        <div>
+            <a href="/">Home</a>            
+        </div>
+    </p>
+    <p>
+        <h1>Planing form for {{uid}} / {{tid}}</h1>        
+    </p>
+
+    <form action="/plans_c/{{uid}}/{{tid}}" method="POST">
+        <p>
+            * Previous numbers would be overwritten <br>
+            * Do not regist between 11pm to 5am due to the backgound processing
+        </p>
+
+        <h2>Demand forecasting</h2>
+        <p>
+            * Put integer numbers only    
+        </p>
+        <table class="table">
+            <tr>
+                <th>D+1 ({{d1}})</th>
+                <th>D+2 ({{d2}})</th>
+                <th>D+3 ({{d3}})</th>
+            </tr>            
+            <tbody>
+                <tr>
+                    <td><input type="text" name="demand_fore_d_1"></td>
+                    <td><input type="text" name="demand_fore_d_2"></td>
+                    <td><input type="text" name="demand_fore_d_3"></td>
+                </tr>
+            </tbody>            
+        </table>
+
+        <h2>Production scheduling</h2>        
+        <p>
+            * <a href='#'>Processing time tables for each day of week</a> <br>
+            * Put a sequence of jobs seperated by comma <br>
+            * For zero production, leave it black
+        </p>
+        <table class="table">
+            <tr>
+                <th>D+3 ({{d3}})</th>
+            </tr>            
+            <tbody>
+                <tr>
+                    <td><input type="text" name="sche_d_3" size="150"></td>                    
+                </tr>
+            </tbody>            
+        </table>        
+        
+        <h2>Sales planning</h2>
+        <p>
+            * Put float numbers only   
+        </p>        
+        <table class="table">
+            <tr>
+                <th>D+3 ({{d3}})</th>
+            </tr>            
+            <tbody>
+                <tr>
+                    <td><input type="text" name="sales_d_3"></td>                    
+                </tr>
+            </tbody>            
+        </table>        
+
+        <h2>Auth key</h2>
+        <input type="password" name="auth_key">
+
+        <p>
+            <input type="submit" value="Regist">
+        </p>
+    </form>
+ 
+
+</body>
+ 
+</html>

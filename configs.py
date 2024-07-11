@@ -11,5 +11,9 @@ PROD_SETUP_COST = 5000000
 
 INV_COST_UNIT = 10
 
+#############################
+UID = 'DGU'
+TID = 'T1'
+
 def f(x):
     return format(x, ',d')
