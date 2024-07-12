@@ -14,7 +14,7 @@
         </div>
     </p>
     <p>
-        <h1>Planing form for {{uid}} / {{tid}}</h1>        
+        <h1>Planing form for {{uid}} / {{tid}} on D+{{lt}} ({{d1}})</h1>        
     </p>
 
     <form action="/plans_c/{{uid}}/{{tid}}" method="POST">
@@ -29,15 +29,15 @@
         </p>
         <table class="table">
             <tr>
-                <th>D+1 ({{d1}})</th>
-                <th>D+2 ({{d2}})</th>
-                <th>D+3 ({{d3}})</th>
+                <th>Forecasted demand</th>
+                <!-- <th>D+2 ({{d2}})</th>
+                <th>D+3 ({{d3}})</th> -->
             </tr>            
             <tbody>
                 <tr>
                     <td><input type="text" name="demand_fore_d_1"></td>
-                    <td><input type="text" name="demand_fore_d_2"></td>
-                    <td><input type="text" name="demand_fore_d_3"></td>
+                    <!-- <td><input type="text" name="demand_fore_d_2"></td>
+                    <td><input type="text" name="demand_fore_d_3"></td> -->
                 </tr>
             </tbody>            
         </table>
@@ -50,11 +50,11 @@
         </p>
         <table class="table">
             <tr>
-                <th>D+3 ({{d3}})</th>
+                <th>Job sequence</th>
             </tr>            
             <tbody>
                 <tr>
-                    <td><input type="text" name="sche_d_3" size="150"></td>                    
+                    <td><input type="text" name="sche" size="100"></td>                    
                 </tr>
             </tbody>            
         </table>        
@@ -65,11 +65,11 @@
         </p>        
         <table class="table">
             <tr>
-                <th>D+3 ({{d3}})</th>
+                <th>Discount rate</th>
             </tr>            
             <tbody>
                 <tr>
-                    <td><input type="text" name="sales_d_3"></td>                    
+                    <td><input type="text" name="sales"></td>                    
                 </tr>
             </tbody>            
         </table>        

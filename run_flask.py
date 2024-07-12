@@ -38,7 +38,7 @@ def main():
 
     cur = g.db.cursor(pymysql.cursors.DictCursor)
 
-    cur.execute("select UID, TID from TEAMS where STATUS='ACTIVE'")
+    cur.execute("select UID, TID, ICON_URL from TEAMS where STATUS='ACTIVE' order by REG_DATE DESC")
     data_list = cur.fetchall()
     # print(data_list)
 
@@ -63,23 +63,51 @@ def main():
     # else:
     #     error = 'invalid input data detected !' # 에러가 발생한 경우
  
-    return render_template('main.html', data_list=data_list, error = None)
+    return render_template('main.html', data_list=data_list, error = error)
 
 @app.route('/board/<uid>/<tid>', methods=['GET']) # 메인 로그인 화면
 def board(uid, tid):
-    return render_template('board.html', uid=uid, tid=tid, error = None)
+    error = None
+
+    cur = g.db.cursor(pymysql.cursors.DictCursor)    
+
+    sql = '''
+        SELECT D.DATE as DAT, D.PRICE as ACT, F.DEMAND_FOR as FORC, ABS(D.PRICE-F.DEMAND_FOR) as ABSERR
+        FROM DEMANDS AS D LEFT JOIN DEMAND_FOR AS F 
+        ON D.DATE = F.PDATE AND F.UID = %s AND F.TID=%s
+        ORDER BY D.DATE DESC LIMIT 10
+    '''
+    cur.execute(sql, (uid, tid))
+    fore_list = cur.fetchall()
+
+    sql = '''
+        SELECT PDATE, DEMAND_FOR FROM DEMAND_FOR
+        WHERE UID = %s AND TID=%s AND PDATE > NOW()
+        ORDER BY PDATE ASC    
+    '''
+    cur.execute(sql, (uid, tid))
+    fore_future_list = cur.fetchall()    
+
+    sql = '''
+        SELECT PDATE, SCHEDULE FROM PRODUCTIONS WHERE UID = %s AND TID=%s
+    '''
+    cur.execute(sql, (uid, tid))
+    sche_list = cur.fetchall()
+ 
+    return render_template('board.html', uid=uid, tid=tid, 
+                           fore_list=fore_list, fore_future_list=fore_future_list, sche_list=sche_list, error = error)
 
 @app.route('/plans_frm/<uid>/<tid>', methods=['GET'])
 def plans_frm(uid, tid): 
-    d1 = datetime.datetime.now() + datetime.timedelta(days=1)    
-    d2 = datetime.datetime.now() + datetime.timedelta(days=2)        
-    d3 = datetime.datetime.now() + datetime.timedelta(days=3)            
+    d1 = datetime.datetime.now() + datetime.timedelta(days=configs.PLANNING_LEADTIME)    
+    # d2 = datetime.datetime.now() + datetime.timedelta(days=2)        
+    # d3 = datetime.datetime.now() + datetime.timedelta(days=3)            
 
     d1 = d1.strftime('%Y-%m-%d') + ' ' + d1.strftime('%a')
-    d2 = d2.strftime('%Y-%m-%d') + ' ' + d2.strftime('%a')
-    d3 = d3.strftime('%Y-%m-%d') + ' ' + d3.strftime('%a')
+    # d2 = d2.strftime('%Y-%m-%d') + ' ' + d2.strftime('%a')
+    # d3 = d3.strftime('%Y-%m-%d') + ' ' + d3.strftime('%a')
 
-    return render_template('plans_frm.html', uid=uid, tid=tid, d1=d1, d2=d2, d3=d3)
+    return render_template('plans_frm.html', uid=uid, tid=tid, d1=d1, lt=configs.PLANNING_LEADTIME)
 
 @app.route('/plans_c/<uid>/<tid>', methods=['POST'])
 def plans_c(uid, tid):
@@ -89,24 +117,25 @@ def plans_c(uid, tid):
 
     # auth key 확인
     auth_key = request.form['auth_key']
-    # print(auth_key)
+    # print(uid, tid)
     cur.execute("select UID, TID from TEAMS where STATUS='ACTIVE' and UID=%s and TID=%s and AUTH_KEY=%s", (uid, tid, auth_key))
     data_list = cur.fetchall()
     if len(data_list)<1:        
         return redirect(url_for('error_page', err_msg='UID, TID is not valid or auth key is not correct.'))
 
+    # demand 처리 ########################
     demand_for = []
     demand_for.append(request.form['demand_fore_d_1'])
-    demand_for.append(request.form['demand_fore_d_2'])
-    demand_for.append(request.form['demand_fore_d_3'])
+    # demand_for.append(request.form['demand_fore_d_2'])
+    # demand_for.append(request.form['demand_fore_d_3'])
 
     demand_for_dates = []
-    d1 = datetime.datetime.now() + datetime.timedelta(days=1)    
-    d2 = datetime.datetime.now() + datetime.timedelta(days=2)        
-    d3 = datetime.datetime.now() + datetime.timedelta(days=3)            
+    d1 = datetime.datetime.now() + datetime.timedelta(days=configs.PLANNING_LEADTIME)    
+    # d2 = datetime.datetime.now() + datetime.timedelta(days=2)        
+    # d3 = datetime.datetime.now() + datetime.timedelta(days=3)            
     demand_for_dates.append(d1.strftime('%Y-%m-%d'))
-    demand_for_dates.append(d2.strftime('%Y-%m-%d'))
-    demand_for_dates.append(d3.strftime('%Y-%m-%d'))
+    # demand_for_dates.append(d2.strftime('%Y-%m-%d'))
+    # demand_for_dates.append(d3.strftime('%Y-%m-%d'))
 
     for df in range(len(demand_for)):
         sql = """INSERT INTO    DEMAND_FOR(UID, TID, PDATE, DEMAND_FOR)
@@ -114,8 +143,18 @@ def plans_c(uid, tid):
                             ON DUPLICATE KEY UPDATE DEMAND_FOR=VALUES(DEMAND_FOR)"""
 
         cur.execute(sql,(uid, tid, demand_for_dates[df], demand_for[df]))
-        g.db.commit()  
- 
+        
+    ################################################
+
+    # schedule 처리 ########################
+    sql = """INSERT INTO    PRODUCTIONS(UID, TID, PDATE, SCHEDULE)
+                            VALUES (%s, %s, %s, %s)
+                            ON DUPLICATE KEY UPDATE SCHEDULE=VALUES(SCHEDULE)"""
+
+    cur.execute(sql,(uid, tid, d1.strftime('%Y-%m-%d'), request.form['sche']))
+    ################################################
+    
+    g.db.commit()  
     return redirect(url_for('board', uid=uid, tid=tid))
 
 

@@ -1,39 +1,24 @@
-<!DOCTYPE html>
-<html lang="en" xmlns:float="http://www.w3.org/1999/xhtml">
-<head>
-    <meta charset="UTF-8">
-    <title>Home</title>
-    <link rel="stylesheet" href="/static/my.css" type="text/css" />
-</head>
- 
-<body>
+{% include 'header.html' %}
+
     <p>
-        <div>
-            <a href="/">Home</a> | 
-            <a href="/plans_frm">Create plans</a> |
-            Logged in {{session['LOGGIN_UID']}} / {{session['LOGGIN_TID']}}
-        </div>
-    </p>
-    <p>
-        <h1>Home</h1>
+        <h1>Teams</h1>
     </p>
   
     <table class="table">
         <tr>
-            <th>UID</th>
-            <th>TID</th>
-            <th>-</th>
+            <th>University</th>
+            <th>Team ID</th>
+            <th>Boards</th>
         </tr>
         {% for d in data_list%}
         <tbody>
             <tr>
-                <td>{{d.UID}}</td>
+                <td><img src='{{d.ICON_URL}}' width="30"> {{d.UID}}</td>
                 <td>{{d.TID}}</td>
                 <td><a href='/board/{{d.UID}}/{{d.TID}}'>Board</a></td>
             </tr>
         </tbody>
         {% endfor %}
     </table>
-</body>
- 
-</html>
+
+{% include 'footer.html' %}

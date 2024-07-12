@@ -16,6 +16,16 @@
 
 * LIVE / RETRO / DEACT
 
+
+# 생산
+
+## 입력
+* 1,2,3,4,5,6,7,8,9,10
+* 일단...
+    * 1job = 10,000제품 <- 설정가능
+    * makespan = 1job * 1,000
+
+
 # System trigger
 
 ## trigger types
@@ -37,3 +47,4 @@
         * plan_prod.txt -> UID, TID, 내일 생산량
     * sales_register.py
         * plan_sales.txt -> UID, TID, 내일 판매량
+

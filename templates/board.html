@@ -1,30 +1,78 @@
-<!DOCTYPE html>
-<html lang="en" xmlns:float="http://www.w3.org/1999/xhtml">
-<head>
-    <meta charset="UTF-8">
-    <title>Home</title>
-    <link rel="stylesheet" href="/static/my.css" type="text/css" />
-</head>
+{% include 'header.html' %}
  
-<body>
-    <p>
-        <div>
-            <a href="/">Home</a>            
-        </div>
-    </p>
     <p>
         <h1>Board of {{uid}} / {{tid}}</h1>
     </p>
- 
+
     <p>
         <a href="/plans_frm/{{uid}}/{{tid}}">Create plans</a>
     </p>
 
     <h2>Demand forecasting</h2>
-    <p>...</p>
+    <h3>At now</h3>
+    <p>
+        <table class="table">
+            <tr>
+                <th>Date</th>
+                <th>Actual demand</th>
+                <th>Forecasted demand</th>
+                <th>Abs err</th>
+            </tr>
+            {% for d in fore_list%}
+            <tbody>
+                <tr>
+                    <td>{{d.DAT}}</td>
+                    <td>{{d.ACT}}</td>
+                    <td>{{d.FORC}}</td>
+                    <td>{{d.ABSERR}}</td>
+                </tr>
+            </tbody>
+            {% endfor %}
+        </table>
+    </p>
+    <h3>In future</h3>
+    <p>
+        <table class="table">
+            <tr>
+                <th>Date</th>
+                <th>Forecasted demand</th>
+            </tr>
+            {% for d in fore_future_list%}
+            <tbody>
+                <tr>
+                    <td>{{d.PDATE}}</td>                    
+                    <td>{{d.DEMAND_FOR}}</td>
+                </tr>
+            </tbody>
+            {% endfor %}
+        </table>
+    </p>
 
     <h2>Production</h2>
-    <p>...</p>
+    <table class="table">
+        <tr>
+            <th>Date</th>
+            <th>Schedule</th>
+            <th>Makespan</th>
+            <th>Cost</th>
+            <th>Extra cost</th>
+            <th>Total cost</th>
+            <th>Gantt chart</th>
+        </tr>
+        {% for d in sche_list%}
+        <tbody>
+            <tr>
+                <td>{{d.PDATE}}</td>                    
+                <td>{{d.SCHEDULE}}</td>
+                <td>---</td>
+                <td>---</td>
+                <td>---</td>
+                <td>---</td>
+                <td>---</td>
+            </tr>
+        </tbody>
+        {% endfor %}
+    </table>    
 
     <h2>Inventory</h2>
     <p>...</p>   
@@ -35,6 +83,4 @@
     <h2>Ledger</h2>
     <p>...</p>    
 
-</body>
- 
-</html>
+{% include 'footer.html' %}
