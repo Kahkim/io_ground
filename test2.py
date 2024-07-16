@@ -1,17 +1,18 @@
-# import pymysql
-# conn = pymysql.connect(host='192.168.0.3', user='io_ground', passwd='dkshk24@!', db='io_ground')
+import pymysql
+conn = pymysql.connect(host='192.168.0.3', user='io_ground', passwd='dkshk24@!', db='io_ground')
 
-# cur = conn.cursor()
+cur = conn.cursor()
 
-# cur.execute("INSERT INTO Test(TYPE, Contents) VALUES ('AA','TEXT!!!')")
-# conn.commit()
+sql = '''
+    SELECT SUM(QTY) AS INVEN FROM INVENTORY WHERE UID=%s AND TID=%s AND QTY>0 AND PROD_DATE<%s
+'''
+print(sql, ('DGU', 'T1', '2024-07-16'))
+cur.execute(sql, ('DGU', 'T1', '2024-07-16'))
+inven = cur.fetchall()
+print(inven)
 
-# cur.execute('select * from Test')
-# ret = cur.fetchall()
-# for r in ret:
-#     print(r)
 
-# conn.close()
+conn.close()
 
 import datetime
 
@@ -28,3 +29,8 @@ next_day_date = now + datetime.timedelta(days=1)
 print(next_day_date)
 next_day_date = now + datetime.timedelta(days=2)
 print(next_day_date)
+
+
+
+
+

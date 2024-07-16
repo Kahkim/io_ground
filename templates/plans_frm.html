@@ -5,7 +5,23 @@
     <title>Home</title>
     <link rel="stylesheet" href="/static/my.css" type="text/css" />
 </head>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" integrity="sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script> 
 
+<script>
+    $(function() {
+        // $("#sche_seq").attr("disabled","disabled"); 
+        $('input[name="sche_type"]').change(function(){
+            v = $('input[name="sche_type"]:checked').prop('value')            
+            if (v=='seq') {
+                $("#sche_seq").attr("disabled",false);                 
+                $("#sche_qty").attr("disabled",true);                 
+            } else {
+                $("#sche_seq").attr("disabled",true); 
+                $("#sche_qty").attr("disabled",false);                 
+            }
+        })
+    })
+</script>
 
 <body>
     <p>
@@ -35,7 +51,7 @@
             </tr>            
             <tbody>
                 <tr>
-                    <td><input type="text" name="demand_fore_d_1"></td>
+                    <td><input type="text" name="demand_fore_d_1" value="0"></td>
                     <!-- <td><input type="text" name="demand_fore_d_2"></td>
                     <td><input type="text" name="demand_fore_d_3"></td> -->
                 </tr>
@@ -44,18 +60,37 @@
 
         <h2>Production scheduling</h2>        
         <p>
-            * <a href='#'>Processing time tables for each day of week</a> <br>
-            * Put a sequence of jobs seperated by comma <br>
-            * For zero production, leave it black
-        </p>
+            * <a href='#'>Processing time tables for each day of week</a>
+        </p>        
         <table class="table">
             <tr>
-                <th>Job sequence</th>
-            </tr>            
-            <tbody>
+                <th>Schedule</th>
+            </tr>           
+            <tbody>                
                 <tr>
-                    <td><input type="text" name="sche" size="100"></td>                    
+                    <td>
+                        <p>
+                            * Scheduling by using your custom scheduler <br>
+                            * Put a sequence of jobs seperated by comma            
+                        </p>
+
+                        <input type="radio" name="sche_type" value="seq" Checked="True">
+                        Job sequence: <input type="text" id="sche_seq" name="sche_seq" size="100">                        
+                    </td>
                 </tr>
+                <tr>
+                    <td>      
+                        <p>
+                            * Scheduling by using SPT scheduler<br>
+                            * Put integer numbers only   
+                        </p>
+
+                        <input type="radio" name="sche_type" value="qty">
+                        Qty : <input type="text" id="sche_qty" name="sche_qty" size="10" disabled="disabled">
+                        
+                    </td>                    
+                </tr>
+                
             </tbody>            
         </table>        
         
@@ -69,7 +104,7 @@
             </tr>            
             <tbody>
                 <tr>
-                    <td><input type="text" name="sales"></td>                    
+                    <td><input type="text" name="sales" value="0"></td>                    
                 </tr>
             </tbody>            
         </table>        

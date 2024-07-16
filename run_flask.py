@@ -1,10 +1,12 @@
 from flask import Flask, render_template, redirect, request, url_for
+from flask import jsonify
 from flask import g
 
 import pymysql
 import pymysql.cursors
 
 import datetime
+import pandas as pd
 
 import configs
  
@@ -65,6 +67,24 @@ def main():
  
     return render_template('main.html', data_list=data_list, error = error)
 
+@app.route('/board_fore_api/<uid>/<tid>', methods=['GET']) # 메인 로그인 화면
+def board_fore_api(uid, tid):
+    error = None
+
+    cur = g.db.cursor(pymysql.cursors.DictCursor)    
+
+    sql = '''
+        SELECT D.DATE as DAT, D.PRICE as ACT, F.DEMAND_FOR as FORC, ABS(D.PRICE-F.DEMAND_FOR) as ABSERR
+        FROM DEMANDS AS D LEFT JOIN DEMAND_FOR AS F 
+        ON D.DATE = F.PDATE AND F.UID = %s AND F.TID=%s
+        ORDER BY D.DATE DESC LIMIT 10
+    '''
+    cur.execute(sql, (uid, tid))
+    fore_list = cur.fetchall()
+
+    return jsonify(fore_list)
+
+
 @app.route('/board/<uid>/<tid>', methods=['GET']) # 메인 로그인 화면
 def board(uid, tid):
     error = None
@@ -89,13 +109,36 @@ def board(uid, tid):
     fore_future_list = cur.fetchall()    
 
     sql = '''
-        SELECT PDATE, SCHEDULE FROM PRODUCTIONS WHERE UID = %s AND TID=%s
+        SELECT PDATE, TYPE, SCHEDULE, QTY FROM PRODUCTIONS WHERE UID = %s AND TID=%s
     '''
     cur.execute(sql, (uid, tid))
     sche_list = cur.fetchall()
+
+    sql = '''
+        SELECT PROD_DATE, QTY FROM INVENTORY WHERE UID = %s AND TID=%s ORDER BY LAST_UPDATED ASC
+    '''
+    cur.execute(sql, (uid, tid))
+    inven_list = cur.fetchall()    
  
+    sql = '''
+        SELECT PDATE, DISC_RATIO FROM SALES WHERE UID = %s AND TID=%s ORDER BY PDATE ASC
+    '''
+    cur.execute(sql, (uid, tid))
+    sales_list = cur.fetchall()    
+
+    sql = '''
+        SELECT DATE,  AMOUNT, ACT, DES, LAST_UPDATED FROM LEDGER WHERE UID = %s AND TID=%s ORDER BY LAST_UPDATED ASC, SEQ DESC
+    '''
+    cur.execute(sql, (uid, tid))
+    ledger_list = cur.fetchall()        
+ 
+
     return render_template('board.html', uid=uid, tid=tid, 
-                           fore_list=fore_list, fore_future_list=fore_future_list, sche_list=sche_list, error = error)
+                           fore_list=fore_list, fore_future_list=fore_future_list, sche_list=sche_list, 
+                           inven_list=inven_list, sales_list=sales_list, ledger_list=ledger_list,
+                           error = error)
+
+
 
 @app.route('/plans_frm/<uid>/<tid>', methods=['GET'])
 def plans_frm(uid, tid): 
@@ -147,13 +190,31 @@ def plans_c(uid, tid):
     ################################################
 
     # schedule 처리 ########################
-    sql = """INSERT INTO    PRODUCTIONS(UID, TID, PDATE, SCHEDULE)
-                            VALUES (%s, %s, %s, %s)
-                            ON DUPLICATE KEY UPDATE SCHEDULE=VALUES(SCHEDULE)"""
+    sql = """INSERT INTO    PRODUCTIONS(UID, TID, PDATE, TYPE, SCHEDULE, QTY)
+                            VALUES (%s, %s, %s, %s, %s, %s)
+                            ON DUPLICATE KEY UPDATE 
+                                TYPE=VALUES(TYPE),
+                                SCHEDULE=VALUES(SCHEDULE),
+                                QTY=VALUES(QTY)
+                                """
+    sche_seq = ''
+    sche_qty = -1
+    if request.form['sche_type']=='seq':
+        sche_seq = request.form['sche_seq']
+    else:
+        sche_qty = request.form['sche_qty']
 
-    cur.execute(sql,(uid, tid, d1.strftime('%Y-%m-%d'), request.form['sche']))
+    cur.execute(sql,(uid, tid, d1.strftime('%Y-%m-%d'), request.form['sche_type'], sche_seq, sche_qty))
     ################################################
-    
+
+    # sales 처리 ########################
+    sql = """INSERT INTO    SALES(UID, TID, PDATE, DISC_RATIO)
+                            VALUES (%s, %s, %s, %s)
+                            ON DUPLICATE KEY UPDATE DISC_RATIO=VALUES(DISC_RATIO)"""
+
+    cur.execute(sql,(uid, tid, d1.strftime('%Y-%m-%d'), request.form['sales']))
+    ################################################
+
     g.db.commit()  
     return redirect(url_for('board', uid=uid, tid=tid))
 
