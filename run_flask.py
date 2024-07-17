@@ -103,25 +103,25 @@ def board(uid, tid):
     sql = '''
         SELECT PDATE, DEMAND_FOR FROM DEMAND_FOR
         WHERE UID = %s AND TID=%s AND PDATE > NOW()
-        ORDER BY PDATE ASC    
+        ORDER BY PDATE DESC    
     '''
     cur.execute(sql, (uid, tid))
     fore_future_list = cur.fetchall()    
 
     sql = '''
-        SELECT PDATE, TYPE, SCHEDULE, QTY FROM PRODUCTIONS WHERE UID = %s AND TID=%s
+        SELECT PDATE, TYPE, SCHEDULE, QTY FROM PRODUCTIONS WHERE UID = %s AND TID=%s ORDER BY LAST_UPDATED DESC
     '''
     cur.execute(sql, (uid, tid))
     sche_list = cur.fetchall()
 
     sql = '''
-        SELECT PROD_DATE, QTY FROM INVENTORY WHERE UID = %s AND TID=%s ORDER BY LAST_UPDATED ASC
+        SELECT PROD_DATE, QTY FROM INVENTORY WHERE UID = %s AND TID=%s ORDER BY PROD_DATE DESC
     '''
     cur.execute(sql, (uid, tid))
     inven_list = cur.fetchall()    
  
     sql = '''
-        SELECT PDATE, DISC_RATIO FROM SALES WHERE UID = %s AND TID=%s ORDER BY PDATE ASC
+        SELECT PDATE, DISC_RATIO FROM SALES WHERE UID = %s AND TID=%s ORDER BY PDATE DESC
     '''
     cur.execute(sql, (uid, tid))
     sales_list = cur.fetchall()    

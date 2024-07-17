@@ -55,7 +55,7 @@ if len(data_list) > 0:
     EXT_PRICE_PER_UNIT = round((1-data_list[0]['DISC_RATIO'])*configs.PRICE_PER_UNIT)
     sql = """INSERT INTO    LEDGER(UID, TID, DATE, AMOUNT, ACT, DES, SEQ)
                         VALUES (%s, %s, %s, %s, %s, %s, 0)
-                        ON DUPLICATE KEY UPDATE AMOUNT=VALUES(AMOUNT)"""
+                        ON DUPLICATE KEY UPDATE AMOUNT=VALUES(AMOUNT), DES=VALUES(DES)"""
     normal_sales = min(data_list[0]['DEMAND'], total_sales)
     disc_sales = max(0, total_sales - data_list[0]['DEMAND'])
     print('sales results', uid, tid, normal_sales, configs.PRICE_PER_UNIT, disc_sales, EXT_PRICE_PER_UNIT)
@@ -75,7 +75,7 @@ print('inventory processing', uid, tid, inven)
 # 장부
 sql = """INSERT INTO    LEDGER(UID, TID, DATE, AMOUNT, ACT, DES, SEQ)
                     VALUES (%s, %s, %s, %s, %s, %s, 3)
-                    ON DUPLICATE KEY UPDATE AMOUNT=VALUES(AMOUNT)"""
+                    ON DUPLICATE KEY UPDATE AMOUNT=VALUES(AMOUNT), DES=VALUES(DES)"""
 amount = -1 * (inven * configs.INV_COST_UNIT)
 cur.execute(sql,(uid, tid, now_date, amount, 'INVEN', str(inven)+' items'))
 
@@ -83,7 +83,7 @@ cur.execute(sql,(uid, tid, now_date, amount, 'INVEN', str(inven)+' items'))
 # 장부
 sql = """INSERT INTO    LEDGER(UID, TID, DATE, AMOUNT, ACT, DES, SEQ)
                     VALUES (%s, %s, %s, %s, %s, %s, 5)
-                    ON DUPLICATE KEY UPDATE AMOUNT=VALUES(AMOUNT)"""
+                    ON DUPLICATE KEY UPDATE AMOUNT=VALUES(AMOUNT), DES=VALUES(DES)"""
 amount = -1 *  (total_demand * configs.BACK_COST_UNIT)
 cur.execute(sql,(uid, tid, now_date, amount, 'BACK', str(total_demand)+' items'))
 print('back', uid, tid, total_demand, amount)
@@ -100,7 +100,7 @@ if len(data_list) > 0:
     # 장부
     sql = """INSERT INTO    LEDGER(UID, TID, DATE, AMOUNT, ACT, DES, SEQ)
                         VALUES (%s, %s, %s, %s, %s, %s, 7)
-                        ON DUPLICATE KEY UPDATE AMOUNT=VALUES(AMOUNT)"""
+                        ON DUPLICATE KEY UPDATE AMOUNT=VALUES(AMOUNT), DES=VALUES(DES)"""
     amount = -1 * (data_list[0]['QTY'] * configs.PROD_COST_UNIT + configs.PROD_SETUP_COST)
     cur.execute(sql,(uid, tid, now_date, amount, 'PROD', str(data_list[0]['QTY'])+' items'))
 
