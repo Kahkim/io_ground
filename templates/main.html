@@ -9,6 +9,7 @@
             <th width="150"></th>
             <th>University</th>
             <th>Team ID</th>
+            <th>Balance</th>
             <th>Boards</th>
         </tr>
         {% for d in data_list%}
@@ -17,6 +18,7 @@
                 <td><img src='{{d.ICON_URL}}' width="120"></td>
                 <td>{{d.UID}}</td>
                 <td>{{d.TID}}</td>
+                <td>{{ "${:,.0f}".format(d.CUR_BALANCE | int) }}</td>
                 <td><a href='/board/{{d.UID}}/{{d.TID}}'>Board</a></td>
             </tr>
         </tbody>

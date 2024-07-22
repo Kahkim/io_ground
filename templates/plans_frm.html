@@ -53,14 +53,18 @@
                 <td>* Put integer numbers only otherwize the values set to 0</td>
                 <td>
                     <p>
-                    For using job sequence,<br>
-                    * Scheduling by using your custom scheduler <br>
-                    * Put a sequence of jobs seperated by comma      
+                        * 1 job = 1,000 items <br>
+                        * Max job is 500 <br>
                     </p>
                     <p>
-                    For using qty,<br>
-                    * Scheduling by using SPT scheduler<br>
-                    * Put integer numbers only otherwize the values set to 0                                  
+                    For using job sequence,<br>
+                        * Scheduling by using your custom scheduler <br>
+                        * Put a sequence of job IDs seperated by comma                     
+                    </p>
+                    <p>
+                    For using job qty,<br>
+                        * Scheduling by using SPT scheduler<br>
+                        * Put integer numbers only otherwize the values set to 0                     
                     </p>
                 </td>
                 <td>* Put float numbers only otherwize the values set to 0</td>
@@ -78,7 +82,7 @@
                         <textarea name="sche_seq_d_{{i}}" id="sche_seq_d_{{i}}" cols="70" rows="5"></textarea>
                         <br>
                         <input type="radio" name="sche_type_d_{{i}}" value="qty">
-                        Qty : <input type="text" id="sche_qty_d_{{i}}" name="sche_qty_d_{{i}}" size="10" disabled="disabled">                        
+                        Job qty : <input type="text" id="sche_qty_d_{{i}}" name="sche_qty_d_{{i}}" size="10" disabled="disabled">                        
                     </td>
                     <td><input type="text" name="sales_d_{{i}}" value="0"></td>
                 </tr>

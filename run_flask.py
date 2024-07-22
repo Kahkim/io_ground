@@ -35,30 +35,15 @@ def after_request(response):
 def main():
     error = None
 
-    # 페이지에서 입력한 값을 받아와 변수에 저장
-    # id = request.form['id']
-    # pw = request.form['pw']
-
     cur = g.db.cursor(pymysql.cursors.DictCursor)
 
-    cur.execute("select UID, TID, ICON_URL from TEAMS where STATUS='ACTIVE' order by REG_DATE DESC")
+    cur.execute("""
+        select UID, TID, ICON_URL, 
+        (SELECT SUM(AMOUNT) FROM LEDGER AS L WHERE L.UID=T.UID AND L.TID=T.TID) AS CUR_BALANCE
+        from TEAMS T
+        where STATUS='ACTIVE' order by REG_DATE DESC
+    """)
     data_list = cur.fetchall()
-    # print(data_list)
-
-    print(f'data_list {len(data_list)}')
-    # for r in ret:
-    #     print(r)
-
-    # conn.close()
-    # cursor = conn.cursor() # connection으로부터 cursor 생성
-    # sql = "SELECT id FROM users WHERE id = %s AND pw = %s" # 실행할 SQL문
-    # value = (id, pw)
-    # cursor.execute("set names utf8") # 한글이 정상적으로 출력이 되지 않는 경우를 위해
-    # cursor.execute(sql, value) # 메소드로 전달해 명령문을 실행
-
-    # data = cursor.fetchall() # SQL문을 실행한 결과 데이터를 꺼냄
-    # cursor.close()
-    # conn.close()
 
     # if data:
     #     session['login_user'] = id # 로그인 된 후 페이지로 데이터를 넘기기 위해 session을 사용함
@@ -128,7 +113,7 @@ def board(uid, tid):
     sales_list = cur.fetchall()    
 
     sql = '''
-        SELECT DATE,  AMOUNT, ACT, DES, LAST_UPDATED FROM LEDGER WHERE UID = %s AND TID=%s ORDER BY LAST_UPDATED ASC, SEQ DESC
+        SELECT DATE,  AMOUNT, ACT, DES, LAST_UPDATED FROM LEDGER WHERE UID = %s AND TID=%s ORDER BY LAST_UPDATED DESC, SEQ DESC
     '''
     cur.execute(sql, (uid, tid))
     ledger_list = cur.fetchall()        
