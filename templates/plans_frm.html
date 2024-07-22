@@ -9,17 +9,18 @@
 
 <script>
     $(function() {
-        // $("#sche_seq").attr("disabled","disabled"); 
-        $('input[name="sche_type"]').change(function(){
-            v = $('input[name="sche_type"]:checked').prop('value')            
+        {% for i in range(next_week_days | length)%}
+        $('input[name="sche_type_d_{{i}}"]').change(function(){
+            v = $('input[name="sche_type_d_{{i}}"]:checked').prop('value')            
             if (v=='seq') {
-                $("#sche_seq").attr("disabled",false);                 
-                $("#sche_qty").attr("disabled",true);                 
+                $("#sche_seq_d_{{i}}").attr("disabled",false);                 
+                $("#sche_qty_d_{{i}}").attr("disabled",true);                 
             } else {
-                $("#sche_seq").attr("disabled",true); 
-                $("#sche_qty").attr("disabled",false);                 
+                $("#sche_seq_d_{{i}}").attr("disabled",true); 
+                $("#sche_qty_d_{{i}}").attr("disabled",false);                 
             }
         })
+        {% endfor %}
     })
 </script>
 
@@ -30,7 +31,7 @@
         </div>
     </p>
     <p>
-        <h1>Planing form for {{uid}} / {{tid}} on D+{{lt}} ({{d1}})</h1>        
+        <h1>Planing form for {{uid}} / {{tid}} from {{next_week_days[0]}} to {{next_week_days[-1]}}</h1>        
     </p>
 
     <form action="/plans_c/{{uid}}/{{tid}}" method="POST">
@@ -39,75 +40,51 @@
             * Do not regist between 6pm to 6am due to a backgound processing
         </p>
 
-        <h2>Demand forecasting</h2>
-        <p>
-            * Put integer numbers only    
-        </p>
+
         <table class="table">
             <tr>
-                <th>Forecasted demand</th>
-                <!-- <th>D+2 ({{d2}})</th>
-                <th>D+3 ({{d3}})</th> -->
-            </tr>            
+                <th>Planning dates</th>
+                <th>Demand</th>
+                <th>Production</th>
+                <th>Sales discount rate</th>
+            </tr>
+            <tr>
+                <td>-</td>
+                <td>* Put integer numbers only otherwize the values set to 0</td>
+                <td>
+                    <p>
+                    For using job sequence,<br>
+                    * Scheduling by using your custom scheduler <br>
+                    * Put a sequence of jobs seperated by comma      
+                    </p>
+                    <p>
+                    For using qty,<br>
+                    * Scheduling by using SPT scheduler<br>
+                    * Put integer numbers only otherwize the values set to 0                                  
+                    </p>
+                </td>
+                <td>* Put float numbers only otherwize the values set to 0</td>
+            </tr>
+
+            {% for i in range(next_week_days | length)%}
             <tbody>
                 <tr>
-                    <td><input type="text" name="demand_fore_d_1" value="0"></td>
-                    <!-- <td><input type="text" name="demand_fore_d_2"></td>
-                    <td><input type="text" name="demand_fore_d_3"></td> -->
-                </tr>
-            </tbody>            
-        </table>
-
-        <h2>Production scheduling</h2>        
-        <p>
-            * <a href='#'>Processing time tables for each day of week</a>
-        </p>        
-        <table class="table">
-            <tr>
-                <th>Schedule</th>
-            </tr>           
-            <tbody>                
-                <tr>
+                    <td>{{next_week_days[i]}}</td>                    
+                    <td><input type="text" name="demand_fore_d_{{i}}" value="0"></td>
                     <td>
-                        <p>
-                            * Scheduling by using your custom scheduler <br>
-                            * Put a sequence of jobs seperated by comma            
-                        </p>
-
-                        <input type="radio" name="sche_type" value="seq" Checked="True">
-                        Job sequence: <input type="text" id="sche_seq" name="sche_seq" size="100">                        
+                        <input type="radio" name="sche_type_d_{{i}}" value="seq" Checked="True">
+                        Job sequence:
+                        <br>
+                        <textarea name="sche_seq_d_{{i}}" id="sche_seq_d_{{i}}" cols="70" rows="5"></textarea>
+                        <br>
+                        <input type="radio" name="sche_type_d_{{i}}" value="qty">
+                        Qty : <input type="text" id="sche_qty_d_{{i}}" name="sche_qty_d_{{i}}" size="10" disabled="disabled">                        
                     </td>
+                    <td><input type="text" name="sales_d_{{i}}" value="0"></td>
                 </tr>
-                <tr>
-                    <td>      
-                        <p>
-                            * Scheduling by using SPT scheduler<br>
-                            * Put integer numbers only   
-                        </p>
-
-                        <input type="radio" name="sche_type" value="qty">
-                        Qty : <input type="text" id="sche_qty" name="sche_qty" size="10" disabled="disabled">
-                        
-                    </td>                    
-                </tr>
-                
-            </tbody>            
-        </table>        
-        
-        <h2>Sales planning</h2>
-        <p>
-            * Put float numbers only   
-        </p>        
-        <table class="table">
-            <tr>
-                <th>Discount rate</th>
-            </tr>            
-            <tbody>
-                <tr>
-                    <td><input type="text" name="sales" value="0"></td>                    
-                </tr>
-            </tbody>            
-        </table>        
+            </tbody>
+            {% endfor %}
+        </table>
 
         <h2>Auth key</h2>
         <input type="password" name="auth_key">

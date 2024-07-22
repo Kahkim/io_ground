@@ -6,6 +6,7 @@
   <p>
     <table class="table">
         <tr>
+            <th width="150"></th>
             <th>University</th>
             <th>Team ID</th>
             <th>Boards</th>
@@ -13,7 +14,8 @@
         {% for d in data_list%}
         <tbody>
             <tr>
-                <td><img src='{{d.ICON_URL}}' width="30"> {{d.UID}}</td>
+                <td><img src='{{d.ICON_URL}}' width="120"></td>
+                <td>{{d.UID}}</td>
                 <td>{{d.TID}}</td>
                 <td><a href='/board/{{d.UID}}/{{d.TID}}'>Board</a></td>
             </tr>

@@ -9,6 +9,7 @@ import datetime
 import pandas as pd
 
 import configs
+import utils
  
 app = Flask(__name__)
 app.secret_key = "MYSCRETKEY"
@@ -142,15 +143,12 @@ def board(uid, tid):
 
 @app.route('/plans_frm/<uid>/<tid>', methods=['GET'])
 def plans_frm(uid, tid): 
-    d1 = datetime.datetime.now() + datetime.timedelta(days=configs.PLANNING_LEADTIME)    
-    # d2 = datetime.datetime.now() + datetime.timedelta(days=2)        
-    # d3 = datetime.datetime.now() + datetime.timedelta(days=3)            
+    # d1 = datetime.datetime.now() + datetime.timedelta(days=configs.PLANNING_LEADTIME)    
+    # d1 = d1.strftime('%Y-%m-%d') + ' ' + d1.strftime('%a')
 
-    d1 = d1.strftime('%Y-%m-%d') + ' ' + d1.strftime('%a')
-    # d2 = d2.strftime('%Y-%m-%d') + ' ' + d2.strftime('%a')
-    # d3 = d3.strftime('%Y-%m-%d') + ' ' + d3.strftime('%a')
+    next_week_days = utils.next_week_days(datetime.datetime.now())    
 
-    return render_template('plans_frm.html', uid=uid, tid=tid, d1=d1, lt=configs.PLANNING_LEADTIME)
+    return render_template('plans_frm.html', uid=uid, tid=tid, next_week_days=next_week_days, lt=configs.PLANNING_LEADTIME)
 
 @app.route('/plans_c/<uid>/<tid>', methods=['POST'])
 def plans_c(uid, tid):
@@ -166,26 +164,24 @@ def plans_c(uid, tid):
     if len(data_list)<1:        
         return redirect(url_for('error_page', err_msg='UID, TID is not valid or auth key is not correct.'))
 
+    planning_dates = utils.next_week_days(datetime.datetime.now())    
+
     # demand 처리 ########################
     demand_for = []
-    demand_for.append(request.form['demand_fore_d_1'])
-    # demand_for.append(request.form['demand_fore_d_2'])
-    # demand_for.append(request.form['demand_fore_d_3'])
+    demand_for.append(request.form['demand_fore_d_0'])
+    demand_for.append(request.form['demand_fore_d_1'])    
+    demand_for.append(request.form['demand_fore_d_2'])
+    demand_for.append(request.form['demand_fore_d_3'])
+    demand_for.append(request.form['demand_fore_d_4'])
 
-    demand_for_dates = []
-    d1 = datetime.datetime.now() + datetime.timedelta(days=configs.PLANNING_LEADTIME)    
-    # d2 = datetime.datetime.now() + datetime.timedelta(days=2)        
-    # d3 = datetime.datetime.now() + datetime.timedelta(days=3)            
-    demand_for_dates.append(d1.strftime('%Y-%m-%d'))
-    # demand_for_dates.append(d2.strftime('%Y-%m-%d'))
-    # demand_for_dates.append(d3.strftime('%Y-%m-%d'))
+    print(demand_for)
 
-    for df in range(len(demand_for)):
+    for i in range(len(planning_dates)):
         sql = """INSERT INTO    DEMAND_FOR(UID, TID, PDATE, DEMAND_FOR)
                             VALUES (%s, %s, %s, %s)
                             ON DUPLICATE KEY UPDATE DEMAND_FOR=VALUES(DEMAND_FOR)"""
-
-        cur.execute(sql,(uid, tid, demand_for_dates[df], demand_for[df]))
+        d =  demand_for[i] if demand_for[i].isnumeric() else '0'
+        cur.execute(sql,(uid, tid, planning_dates[i], d))
         
     ################################################
 
@@ -197,14 +193,17 @@ def plans_c(uid, tid):
                                 SCHEDULE=VALUES(SCHEDULE),
                                 QTY=VALUES(QTY)
                                 """
-    sche_seq = ''
-    sche_qty = -1
-    if request.form['sche_type']=='seq':
-        sche_seq = request.form['sche_seq']
-    else:
-        sche_qty = request.form['sche_qty']
+    for i in range(len(planning_dates)):
+        sche_seq = ''
+        sche_qty = -1
+        if request.form['sche_type_d_'+str(i)]=='seq':
+            sche_seq = request.form['sche_seq_d_'+str(i)]
+        else:
+            sche_qty = request.form['sche_qty_d_'+str(i)]
+            sche_qty =  sche_qty if sche_qty.isnumeric() else '0'
 
-    cur.execute(sql,(uid, tid, d1.strftime('%Y-%m-%d'), request.form['sche_type'], sche_seq, sche_qty))
+        cur.execute(sql,(uid, tid, planning_dates[i], request.form['sche_type_d_'+str(i)], 
+                         sche_seq, sche_qty))
     ################################################
 
     # sales 처리 ########################
@@ -212,7 +211,9 @@ def plans_c(uid, tid):
                             VALUES (%s, %s, %s, %s)
                             ON DUPLICATE KEY UPDATE DISC_RATIO=VALUES(DISC_RATIO)"""
 
-    cur.execute(sql,(uid, tid, d1.strftime('%Y-%m-%d'), request.form['sales']))
+    for i in range(len(planning_dates)):
+        d =  request.form['sales_d_'+str(i)] if request.form['sales_d_'+str(i)].isnumeric() else '0'
+        cur.execute(sql,(uid, tid, planning_dates[i], d))
     ################################################
 
     g.db.commit()  

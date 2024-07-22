@@ -18,3 +18,4 @@ PLANNING_LEADTIME = 3
 
 def f(x):
     return format(x, ',d')
+    
