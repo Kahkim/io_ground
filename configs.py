@@ -14,6 +14,7 @@ BACK_COST_UNIT = 50
 
 PLANNING_LEADTIME = 3
 
+NUM_ITEMS_PER_JOB = 1000
 #############################
 
 def f(x):

@@ -1,5 +1,10 @@
 {% include 'header.html' %}
- 
+
+<!--
+https://doong-e.tistory.com/50
+-->
+
+
     <p>
         <h1>Board of {{uid}} / {{tid}}</h1>
     </p>
@@ -9,6 +14,9 @@
     </p>
 
     <h2>Demand forecasting</h2>
+
+    <div id="chart" class="chart"></div>
+
     <h3>At now</h3>    
     <table class="table">
         <tr>
@@ -28,88 +36,6 @@
         </tbody>
         {% endfor %}
     </table>
-
-    <p class="label"></p>
-    <script src="http://d3js.org/d3.v3.min.js"></script>
-    <script>
-        var label = d3.select(".label");
-        // Set the dimensions of the canvas / graph
-        var	margin = {top: 30, right: 20, bottom: 30, left: 50},
-            width = 1024 - margin.left - margin.right,
-            height = 350 - margin.top - margin.bottom;        
-
-        // Set the ranges
-        var	x = d3.time.scale().range([0, width]);
-        var	y = d3.scale.linear().range([height, 0]);
-
-        // Define the axes
-        var	xAxis = d3.svg.axis().scale(x)
-            .orient("bottom").ticks(5);
-
-        var	yAxis = d3.svg.axis().scale(y)
-            .orient("left").ticks(5);
-
-        // Define the line
-        var	valueline = d3.svg.line()
-            .x(function(d) { return x(d.DAT); })
-            .y(function(d) { return y(d.ACT); });
-    
-        // Adds the svg canvas
-        var	svg = d3.select("body")
-            .append("svg")
-            .attr("width", width + margin.left + margin.right)
-            .attr("height", height + margin.top + margin.bottom)
-            .append("g")
-            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-        d3.json('/board_fore_api/DGU/T1', function(error, data) {            
-            if (error) throw error;
-            data.forEach(d => {
-                d.ACT = + d.ACT;
-                d.DAT = new Date(d.DAT);
-                // console.log(d.ACT, d.DAT)
-            }); 
-            // Scale the range of the data
-            x.domain(d3.extent(data, function(d) { return d.DAT; }));
-            y.domain([d3.min(data, function(d) { return d.ACT*0.95; }), d3.max(data, function(d) { return d.ACT*1.05; })]);
-
-            // Add the valueline path.
-            svg.append("path")		// Add the valueline path.
-                .attr("class", "line")
-                .attr("d", valueline(data));
-                
-                // Add the valueline path.
-            svg		// Add the valueline path.
-                .selectAll("circle")
-                .data(data)
-                .enter()
-                .append("circle")
-                .attr("r", 10)
-            .attr("cx", function(d) {
-                return x(d.DAT)
-            })
-            .attr("cy", function(d) {
-                return y(d.ACT)
-            })
-            .on("mouseover", function(d,i) {            
-                label.style("transform", "translate("+ x(d.DAT) +"px," + (y(d.ACT)) +"px)")
-                label.text(d.ACT)
-                console.log("translate("+ x(d.DAT) +"px," + (y(d.ACT)) +"px)"+d.ACT)
-            });
-                
-            // Add the X Axis
-            svg.append("g")			// Add the X Axis
-                .attr("class", "x axis")
-                .attr("transform", "translate(0," + height + ")")
-                .call(xAxis);
-
-            // Add the Y Axis
-            svg.append("g")			// Add the Y Axis
-                .attr("class", "y axis")
-                .call(yAxis);
-
-        })          
-    </script>
 
     <h3>In future</h3>
     <table class="table">
@@ -132,8 +58,9 @@
         <tr>
             <th>Date</th>
             <th>Type</th>
-            <th>Sequence</th>
+            <!-- <th>Sequence</th> -->
             <th>Qty</th>
+            <th>Jobs</th>
             <th>Makespan</th>
             <th>Cost</th>
             <th>Extra cost</th>
@@ -145,8 +72,9 @@
             <tr>
                 <td>{{d.PDATE}}</td>   
                 <td>{{d.TYPE}}</td>                 
-                <td>{{d.SCHEDULE}}</td>                 
+                <!-- <td>{{d.SCHEDULE}}</td>                  -->
                 <td>{{ "{:,.0f}".format(d.QTY | int) }}</td>
+                <td>{{ "{:,.0f}".format(d.JOBS | int) }}</td>
                 <td>---</td>
                 <td>---</td>
                 <td>---</td>
@@ -213,33 +141,10 @@
     </table>    
 
 
-    <style> /* set the CSS */
-
-        body { font: 12px Arial;}
-        
-        path { 
-          stroke: steelblue;
-            stroke-width: 2;
-            fill: none;
-        }
-        
-        .axis path,
-        .axis line {
-            fill: none;
-            stroke: grey;
-            stroke-width: 1;
-            shape-rendering: crispEdges;
-        }
-        
-        .label {
-            position:absolute;
-        }
-        
-        circle {
-            cursor: pointer;
-            fill: steelblue;
-        }
-        
-        </style>    
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script type="text/javascript">
+    var graphs = {{graphJSON | safe}};
+    Plotly.plot('chart',graphs,{});        
+</script>
 
 {% include 'footer.html' %}

@@ -37,14 +37,8 @@
     * for RETRO <-- able to set CUR_DATE for sale, production, and inventoring.
     * 우선구현 필요
 
-# Plan register
+# 엔진 돌아갈때 위험요소
 
-* 서버측에서 사용자의 계획 등록기
-* (임시) plans txt 입력받아 등록
-    * demand_register.py
-        * plan_demand_exp.txt
-    * prod_register.py
-        * plan_prod.txt -> UID, TID, 내일 생산량
-    * sales_register.py
-        * plan_sales.txt -> UID, TID, 내일 판매량
+* schedule job id seq 안 맞는거
 
+* 로직 문제

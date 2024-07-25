@@ -8,6 +8,11 @@ import pymysql.cursors
 import datetime
 import pandas as pd
 
+import json
+import plotly
+import plotly.express as px
+import plotly.graph_objects as go
+
 import configs
 import utils
  
@@ -60,23 +65,24 @@ def board_fore_api(uid, tid):
     cur = g.db.cursor(pymysql.cursors.DictCursor)    
 
     sql = '''
-        SELECT D.DATE as DAT, D.PRICE as ACT, F.DEMAND_FOR as FORC, ABS(D.PRICE-F.DEMAND_FOR) as ABSERR
+        SELECT date_format(D.DATE, '%%Y-%%m-%%d') as DAT, D.PRICE as ACT, F.DEMAND_FOR as FORC, ABS(D.PRICE-F.DEMAND_FOR) as ABSERR
         FROM DEMANDS AS D LEFT JOIN DEMAND_FOR AS F 
-        ON D.DATE = F.PDATE AND F.UID = %s AND F.TID=%s
+        ON D.DATE=F.PDATE AND F.UID=%s AND F.TID=%s
         ORDER BY D.DATE DESC LIMIT 10
     '''
     cur.execute(sql, (uid, tid))
     fore_list = cur.fetchall()
 
+    print(jsonify(fore_list).get_data(as_text=True))
     return jsonify(fore_list)
 
 
 @app.route('/board/<uid>/<tid>', methods=['GET']) # 메인 로그인 화면
 def board(uid, tid):
     error = None
-
     cur = g.db.cursor(pymysql.cursors.DictCursor)    
 
+    # forecasting #######################
     sql = '''
         SELECT D.DATE as DAT, D.PRICE as ACT, F.DEMAND_FOR as FORC, ABS(D.PRICE-F.DEMAND_FOR) as ABSERR
         FROM DEMANDS AS D LEFT JOIN DEMAND_FOR AS F 
@@ -88,42 +94,69 @@ def board(uid, tid):
 
     sql = '''
         SELECT PDATE, DEMAND_FOR FROM DEMAND_FOR
-        WHERE UID = %s AND TID=%s AND PDATE > NOW()
-        ORDER BY PDATE DESC    
+        WHERE UID = %s AND TID=%s AND PDATE >= date_format(NOW(), '%%Y-%%m-%%d')
+        ORDER BY PDATE DESC LIMIT 10   
     '''
     cur.execute(sql, (uid, tid))
     fore_future_list = cur.fetchall()    
 
+    df = pd.DataFrame(fore_list)
+    df2 = pd.DataFrame(fore_future_list)
+    y_min = (min(df.loc[:,'ACT'].min(), df.loc[:,'FORC'].min(), df2.loc[:,'DEMAND_FOR'].min()))
+    y_max = (max(df.loc[:,'ACT'].max(), df.loc[:,'FORC'].max(), df2.loc[:,'DEMAND_FOR'].max()))
+    # df = pd.DataFrame({
+    #     "Dates": ["Apples", "Oranges", "Bananas", "Apples", "Oranges", "Bananas"],
+    #     "Demands": [4, 1, 2, 2, 4, 5],
+    #     # "City": ["SF", "SF", "SF", "Montreal", "Montreal", "Montreal"]
+    # })
+    fig = go.Figure()    
+    fig.add_trace(go.Scatter(x=df.loc[:,'DAT'].values, y=df.loc[:,'ACT'].values, mode='lines+markers', name='Actual'))
+    fig.add_trace(go.Scatter(x=df.loc[:,'DAT'].values, y=df.loc[:,'FORC'].values, mode='lines+markers', name='Forecasted'))    
+    fig.add_trace(go.Scatter(x=df2.loc[:,'PDATE'].values, y=df2.loc[:,'DEMAND_FOR'].values, mode='lines+markers', name='Forecasted-future'))    
+    fig.update_yaxes(range=[y_min*0.8, y_max*1.05])
+
+    # fig.update_yaxes(
+    #     scaleanchor = "y",
+    #     scaleratio = 1.5,
+    # )    
+    # fig = px.line(df, x='DAT', y='ACT', markers=True)
+    # fig = px.bar(df, x="Fruit", y="Amount", color="City", barmode="group", width=1200)
+    
+    graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)    
+
+    # production ###########################
     sql = '''
-        SELECT PDATE, TYPE, SCHEDULE, QTY FROM PRODUCTIONS WHERE UID = %s AND TID=%s ORDER BY LAST_UPDATED DESC
+        SELECT PDATE, TYPE, SCHEDULE, QTY, JOBS FROM PRODUCTIONS WHERE UID = %s AND TID=%s 
+        ORDER BY PDATE DESC LIMIT 10
     '''
     cur.execute(sql, (uid, tid))
     sche_list = cur.fetchall()
 
     sql = '''
-        SELECT PROD_DATE, QTY FROM INVENTORY WHERE UID = %s AND TID=%s ORDER BY PROD_DATE DESC
-    '''
-    cur.execute(sql, (uid, tid))
-    inven_list = cur.fetchall()    
- 
-    sql = '''
-        SELECT PDATE, DISC_RATIO FROM SALES WHERE UID = %s AND TID=%s ORDER BY PDATE DESC
+        SELECT PDATE, DISC_RATIO FROM SALES WHERE UID = %s AND TID=%s ORDER BY PDATE DESC LIMIT 10
     '''
     cur.execute(sql, (uid, tid))
     sales_list = cur.fetchall()    
 
     sql = '''
-        SELECT DATE,  AMOUNT, ACT, DES, LAST_UPDATED FROM LEDGER WHERE UID = %s AND TID=%s ORDER BY LAST_UPDATED DESC, SEQ DESC
+        SELECT PROD_DATE, QTY FROM INVENTORY WHERE UID = %s AND TID=%s ORDER BY PROD_DATE DESC LIMIT 10
+    '''
+    cur.execute(sql, (uid, tid))
+    inven_list = cur.fetchall()    
+
+    sql = '''
+        SELECT DATE,  AMOUNT, ACT, DES, LAST_UPDATED FROM LEDGER WHERE UID = %s AND TID=%s 
+        ORDER BY DATE DESC, SEQ ASC
     '''
     cur.execute(sql, (uid, tid))
     ledger_list = cur.fetchall()        
- 
 
+    
     return render_template('board.html', uid=uid, tid=tid, 
                            fore_list=fore_list, fore_future_list=fore_future_list, sche_list=sche_list, 
                            inven_list=inven_list, sales_list=sales_list, ledger_list=ledger_list,
+                           graphJSON=graphJSON,
                            error = error)
-
 
 
 @app.route('/plans_frm/<uid>/<tid>', methods=['GET'])
