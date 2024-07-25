@@ -23,6 +23,7 @@ weekday_list = ['mon','tue','wed','thu','fri','sat','sun']
 weekday = (weekday_list[datetime.datetime.now().weekday()])
 
 # sales ###########################################
+print(f'sales results' + ('-'*10))
 
 total_demand = 0
 total_sales = 0
@@ -72,7 +73,7 @@ if len(data_list) > 0:
 sql = """INSERT INTO    LEDGER(UID, TID, DATE, AMOUNT, ACT, DES, SEQ)
                     VALUES (%s, %s, %s, %s, %s, %s, 0)
                     ON DUPLICATE KEY UPDATE AMOUNT=VALUES(AMOUNT), DES=VALUES(DES)"""
-print(f'sales results' + ('-'*10))
+
 print(f'\t{uid}, {tid}, normal_sales:{normal_sales}, disc_sales:{disc_sales}, EXT_PRICE_PER_UNIT:{EXT_PRICE_PER_UNIT}')
 print(str(normal_sales)+' items')
 cur.execute(sql,(uid, tid, now_date, normal_sales*configs.PRICE_PER_UNIT, 'SALES', str(normal_sales)+' items'))
@@ -80,6 +81,7 @@ cur.execute(sql,(uid, tid, now_date, disc_sales*EXT_PRICE_PER_UNIT, 'SALESD', st
 
 
 # inventory ###########################################
+print(f'inventory results' + ('-'*10))
 
 sql = '''
     SELECT IFNULL(SUM(QTY), 0) AS INVEN FROM INVENTORY WHERE UID=%s AND TID=%s AND QTY>0 AND PROD_DATE<%s
@@ -104,7 +106,9 @@ cur.execute(sql,(uid, tid, now_date, amount, 'BACK', str(total_demand)+' items')
 print('back', uid, tid, total_demand, amount)
 
 # production ###########################################
-cur.execute("select TYPE, SCHEDULE, QTY from PRODUCTIONS where UID=%s and TID=%s and PDATE=%s", (uid, tid, now_date))
+print(f'production results' + ('-'*10))
+
+cur.execute("select TYPE, SCHEDULE, JOBS from PRODUCTIONS where UID=%s and TID=%s and PDATE=%s", (uid, tid, now_date))
 data_list = cur.fetchall()
 if len(data_list) > 0:    
 
@@ -112,25 +116,26 @@ if len(data_list) > 0:
     # 요일에 따른 파일 선택
     ptime_file = 't_500_20_'+weekday+'.csv'
     # 생산량 결정 (job 수) 1 job = 1,000 item
-    numJobs = int(np.ceil(data_list[0]['QTY']/configs.NUM_ITEMS_PER_JOB)*configs.NUM_ITEMS_PER_JOB)
+    # numJobs = int(np.ceil(data_list[0]['JOBS']/configs.NUM_ITEMS_PER_JOB)*configs.NUM_ITEMS_PER_JOB)
+    numItems = data_list[0]['JOBS'] * configs.NUM_ITEMS_PER_JOB
     print(f'ptime_file: {ptime_file}')
 
-    sql = """UPDATE PRODUCTIONS SET JOBS=%s WHERE UID=%s AND TID=%s AND PDATE=%s"""
-    cur.execute(sql,(numJobs, uid, tid, now_date))
+    sql = """UPDATE PRODUCTIONS SET QTY=%s WHERE UID=%s AND TID=%s AND PDATE=%s"""
+    cur.execute(sql,(numItems, uid, tid, now_date))
 
     sql = """INSERT INTO    INVENTORY(UID, TID, PROD_DATE, QTY)
                     VALUES (%s, %s, %s, %s)
                     ON DUPLICATE KEY UPDATE QTY=VALUES(QTY)"""
-    cur.execute(sql,(uid, tid, now_date, data_list[0]['QTY']))
+    cur.execute(sql,(uid, tid, now_date, numItems))
 
     # 장부
     sql = """INSERT INTO    LEDGER(UID, TID, DATE, AMOUNT, ACT, DES, SEQ)
                         VALUES (%s, %s, %s, %s, %s, %s, 7)
                         ON DUPLICATE KEY UPDATE AMOUNT=VALUES(AMOUNT), DES=VALUES(DES)"""
-    amount = -1 * (data_list[0]['QTY'] * configs.PROD_COST_UNIT + configs.PROD_SETUP_COST)
-    cur.execute(sql,(uid, tid, now_date, amount, 'PROD', str(data_list[0]['QTY'])+' items'))
+    amount = -1 * (numItems * configs.PROD_COST_UNIT + configs.PROD_SETUP_COST)
+    cur.execute(sql,(uid, tid, now_date, amount, 'PROD', str(numItems)+' items'))
 
-    print('production', uid, tid, data_list[0]['QTY'], amount)
+    print('production', uid, tid, numItems, amount)
 
 
 conn.commit()

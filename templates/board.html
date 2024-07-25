@@ -59,8 +59,8 @@ https://doong-e.tistory.com/50
             <th>Date</th>
             <th>Type</th>
             <!-- <th>Sequence</th> -->
-            <th>Qty</th>
             <th>Jobs</th>
+            <th>Qty</th>            
             <th>Makespan</th>
             <th>Cost</th>
             <th>Extra cost</th>
@@ -72,9 +72,9 @@ https://doong-e.tistory.com/50
             <tr>
                 <td>{{d.PDATE}}</td>   
                 <td>{{d.TYPE}}</td>                 
-                <!-- <td>{{d.SCHEDULE}}</td>                  -->
-                <td>{{ "{:,.0f}".format(d.QTY | int) }}</td>
+                <!-- <td>{{d.SCHEDULE}}</td>                  -->                
                 <td>{{ "{:,.0f}".format(d.JOBS | int) }}</td>
+                <td>{{ "{:,.0f}".format(d.QTY | int) }}</td>
                 <td>---</td>
                 <td>---</td>
                 <td>---</td>

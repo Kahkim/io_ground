@@ -204,12 +204,12 @@ def plans_c(uid, tid):
     ################################################
 
     # schedule 처리 ########################
-    sql = """INSERT INTO    PRODUCTIONS(UID, TID, PDATE, TYPE, SCHEDULE, QTY)
+    sql = """INSERT INTO    PRODUCTIONS(UID, TID, PDATE, TYPE, SCHEDULE, JOBS)
                             VALUES (%s, %s, %s, %s, %s, %s)
                             ON DUPLICATE KEY UPDATE 
                                 TYPE=VALUES(TYPE),
                                 SCHEDULE=VALUES(SCHEDULE),
-                                QTY=VALUES(QTY)
+                                JOBS=VALUES(JOBS)
                                 """
     for i in range(len(planning_dates)):
         sche_seq = ''
