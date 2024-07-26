@@ -102,8 +102,12 @@ def board(uid, tid):
 
     df = pd.DataFrame(fore_list)
     df2 = pd.DataFrame(fore_future_list)
-    y_min = (min(df.loc[:,'ACT'].min(), df.loc[:,'FORC'].min(), df2.loc[:,'DEMAND_FOR'].min()))
-    y_max = (max(df.loc[:,'ACT'].max(), df.loc[:,'FORC'].max(), df2.loc[:,'DEMAND_FOR'].max()))
+    if len(df2)>0:
+        y_min = (min(df.loc[:,'ACT'].min(), df.loc[:,'FORC'].min(), df2.loc[:,'DEMAND_FOR'].min()))
+        y_max = (max(df.loc[:,'ACT'].max(), df.loc[:,'FORC'].max(), df2.loc[:,'DEMAND_FOR'].max()))
+    else:
+        y_min = (min(df.loc[:,'ACT'].min(), df.loc[:,'FORC'].min()))
+        y_max = (max(df.loc[:,'ACT'].max(), df.loc[:,'FORC'].max()))        
     # df = pd.DataFrame({
     #     "Dates": ["Apples", "Oranges", "Bananas", "Apples", "Oranges", "Bananas"],
     #     "Demands": [4, 1, 2, 2, 4, 5],
@@ -112,7 +116,7 @@ def board(uid, tid):
     fig = go.Figure()    
     fig.add_trace(go.Scatter(x=df.loc[:,'DAT'].values, y=df.loc[:,'ACT'].values, mode='lines+markers', name='Actual'))
     fig.add_trace(go.Scatter(x=df.loc[:,'DAT'].values, y=df.loc[:,'FORC'].values, mode='lines+markers', name='Forecasted'))    
-    fig.add_trace(go.Scatter(x=df2.loc[:,'PDATE'].values, y=df2.loc[:,'DEMAND_FOR'].values, mode='lines+markers', name='Forecasted-future'))    
+    if len(df2)>0: fig.add_trace(go.Scatter(x=df2.loc[:,'PDATE'].values, y=df2.loc[:,'DEMAND_FOR'].values, mode='lines+markers', name='Forecasted-future'))    
     fig.update_yaxes(range=[y_min*0.8, y_max*1.05])
 
     # fig.update_yaxes(
@@ -149,8 +153,7 @@ def board(uid, tid):
         ORDER BY DATE DESC, SEQ ASC
     '''
     cur.execute(sql, (uid, tid))
-    ledger_list = cur.fetchall()        
-
+    ledger_list = cur.fetchall()            
     
     return render_template('board.html', uid=uid, tid=tid, 
                            fore_list=fore_list, fore_future_list=fore_future_list, sche_list=sche_list, 
