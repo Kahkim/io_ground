@@ -2,7 +2,7 @@ from matplotlib import pyplot as plt
 import random
 
 def sort_by_schedule(job_seq, ptimes):
-    sorted_ptimes = ptimes.iloc[0:0]
+    sorted_ptimes = ptimes.iloc[0:0].copy()
     for jobid in job_seq:
          sorted_ptimes.loc[jobid] = ptimes.loc[jobid]
     return sorted_ptimes    
@@ -21,11 +21,11 @@ def build_schedule(job_seq, ptimes):
 
     # 첫 time들 설정
     first_job_id = job_seq[0]
-    df['M1_in'][first_job_id] = 0        
-    df['M1_out'][first_job_id] = df['M1_in'][first_job_id] + ptimes['M1'][first_job_id]
+    df.loc[first_job_id, 'M1_in'] = 0        
+    df.loc[first_job_id, 'M1_out'] = df.loc[first_job_id, 'M1_in'] + ptimes.loc[first_job_id, 'M1']
     for i in range(1, num_machines):
-        df[f'M{i+1}_in'][first_job_id] = df[f'M{i}_out'][first_job_id]
-        df[f'M{i+1}_out'][first_job_id] = df[f'M{i+1}_in'][first_job_id] + ptimes[f'M{i+1}'][first_job_id]
+        df.loc[first_job_id, f'M{i+1}_in'] = df.loc[first_job_id, f'M{i}_out']
+        df.loc[first_job_id, f'M{i+1}_out'] = df.loc[first_job_id, f'M{i+1}_in'] + ptimes.loc[first_job_id, f'M{i+1}']
     # print(df)
     # iterative하게 반복
     for i in range(1, len(job_seq)):
@@ -33,15 +33,15 @@ def build_schedule(job_seq, ptimes):
         job_b = job_seq[i-1]
         for j in range(1, num_machines):
             # print(job, job_b, j)
-            df['M1_in'][job] = df['M1_out'][job_b]
-            df['M1_out'][job] = df['M1_in'][job] + ptimes['M1'][job]
+            df.loc[job, 'M1_in'] = df.loc[job_b, 'M1_out']
+            df.loc[job, 'M1_out'] = df.loc[job, 'M1_in'] + ptimes.loc[job, 'M1']
             # 첫번째 M2에서의 out 시간이 두번째 M1에서의 in 시간보다 크다면, M2 in 시간은 M2의 전 out 시간이다.
             # 반대로 작거나 같다면, 같은 Job 내의 M2 in 시간은M1 out 시간과 같다.
-            if df[f'M{j}_out'][job] < df[f'M{j+1}_out'][job_b]:
-                df[f'M{j+1}_in'][job] = df[f'M{j+1}_out'][job_b]
-            elif df[f'M{j}_out'][job] >= df[f'M{j+1}_out'][job_b]:
-                df[f'M{j+1}_in'][job] = df[f'M{j}_out'][job]
-            df[f'M{j+1}_out'][job] = df[f'M{j+1}_in'][job] + ptimes[f'M{j+1}'][job]                
+            if df.loc[job, f'M{j}_out'] < df.loc[job_b, f'M{j+1}_out']:
+                df.loc[job, f'M{j+1}_in'] = df.loc[job_b, f'M{j+1}_out']
+            elif df.loc[job, f'M{j}_out'] >= df.loc[job_b, f'M{j+1}_out']:
+                df.loc[job, f'M{j+1}_in'] = df.loc[job, f'M{j}_out']
+            df.loc[job, f'M{j+1}_out'] = df.loc[job, f'M{j+1}_in'] + ptimes.loc[job, f'M{j+1}']                
     
     return df
 
