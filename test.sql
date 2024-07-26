@@ -72,3 +72,9 @@ SELECT date_format(D.DATE, '%Y-%m-%d') as DAT, D.PRICE as ACT, F.DEMAND_FOR as F
         FROM DEMANDS AS D LEFT JOIN DEMAND_FOR AS F 
         ON D.DATE = F.PDATE
 
+
+
+SELECT date_format(PDATE, '%Y-%m-%d') as DD, DEMAND_FOR FROM DEMAND_FOR
+WHERE UID = 'DGU' AND TID = 'T1' AND PDATE >= date_format(NOW(), '%Y-%m-%d')
+        
+        
