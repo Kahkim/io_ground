@@ -12,6 +12,7 @@ import json
 import plotly
 import plotly.express as px
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 import configs
 import utils
@@ -87,7 +88,7 @@ def board(uid, tid):
         SELECT D.DATE as DAT, D.PRICE as ACT, F.DEMAND_FOR as FORC, ABS(D.PRICE-F.DEMAND_FOR) as ABSERR
         FROM DEMANDS AS D LEFT JOIN DEMAND_FOR AS F 
         ON D.DATE = F.PDATE AND F.UID = %s AND F.TID=%s
-        ORDER BY D.DATE DESC LIMIT 10
+        ORDER BY D.DATE DESC LIMIT 60
     '''
     cur.execute(sql, (uid, tid))
     fore_list = cur.fetchall()
@@ -95,7 +96,7 @@ def board(uid, tid):
     sql = '''
         SELECT PDATE, DEMAND_FOR FROM DEMAND_FOR
         WHERE UID = %s AND TID=%s AND PDATE >= date_format(NOW(), '%%Y-%%m-%%d')
-        ORDER BY PDATE DESC LIMIT 10   
+        ORDER BY PDATE DESC LIMIT 60   
     '''
     cur.execute(sql, (uid, tid))
     fore_future_list = cur.fetchall()    
@@ -113,11 +114,20 @@ def board(uid, tid):
     #     "Demands": [4, 1, 2, 2, 4, 5],
     #     # "City": ["SF", "SF", "SF", "Montreal", "Montreal", "Montreal"]
     # })
-    fig = go.Figure()    
-    fig.add_trace(go.Scatter(x=df.loc[:,'DAT'].values, y=df.loc[:,'ACT'].values, mode='lines+markers', name='Actual'))
-    fig.add_trace(go.Scatter(x=df.loc[:,'DAT'].values, y=df.loc[:,'FORC'].values, mode='lines+markers', name='Forecasted'))    
-    if len(df2)>0: fig.add_trace(go.Scatter(x=df2.loc[:,'PDATE'].values, y=df2.loc[:,'DEMAND_FOR'].values, mode='lines+markers', name='Forecasted-future'))    
-    fig.update_yaxes(range=[y_min*0.8, y_max*1.05])
+    # fig = go.Figure() 
+    # fig = make_subplots(specs=[[{"secondary_y": True}]])
+    fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.02)
+    fig.add_trace(go.Scatter(x=df.loc[:,'DAT'].values, y=df.loc[:,'ACT'].values, mode='lines+markers', name='Actual'), row=1, col=1)
+    fig.add_trace(go.Scatter(x=df.loc[:,'DAT'].values, y=df.loc[:,'FORC'].values, mode='lines+markers', name='Forecasted'), row=1, col=1)    
+    if len(df2)>0: fig.add_trace(go.Scatter(x=df2.loc[:,'PDATE'].values, y=df2.loc[:,'DEMAND_FOR'].values, mode='lines+markers', name='Forecasted-future'), row=1, col=1)    
+    fig.add_trace(go.Bar(
+        x=df.loc[:,'DAT'].values,
+        y=df.loc[:,'ABSERR'].values,
+        name="ABS err",        
+        marker=dict(color="lightslategray"),         
+    ), row=2, col=1)    
+    fig.update_yaxes(range=[y_min*0.8, y_max*1.05], row=1, col=1)
+    fig.update_yaxes(row=2, col=1)
 
     # fig.update_yaxes(
     #     scaleanchor = "y",
@@ -169,7 +179,7 @@ def plans_frm(uid, tid):
 
     next_week_days = utils.next_week_days(datetime.datetime.now())    
 
-    return render_template('plans_frm.html', uid=uid, tid=tid, next_week_days=next_week_days, lt=configs.PLANNING_LEADTIME)
+    return render_template('plans_frm.html', uid=uid, tid=tid, next_week_days=next_week_days)
 
 @app.route('/plans_c/<uid>/<tid>', methods=['POST'])
 def plans_c(uid, tid):
