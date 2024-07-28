@@ -124,7 +124,7 @@ def board(uid, tid):
         x=df.loc[:,'DAT'].values,
         y=df.loc[:,'ABSERR'].values,
         name="ABS err",        
-        marker=dict(color="lightslategray"),         
+        marker=dict(color="lightslategray"),
     ), row=2, col=1)    
     fig.update_yaxes(range=[y_min*0.8, y_max*1.05], row=1, col=1)
     fig.update_yaxes(row=2, col=1)
