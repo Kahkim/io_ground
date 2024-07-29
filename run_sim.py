@@ -9,7 +9,7 @@ import sys_configs
 
 import configs
 
-import production.scheduling_lib
+import production.scheduling_lib as slib
 
 import pymysql 
 conn = pymysql.connect(host=sys_configs.HOST, user=sys_configs.USER, passwd=sys_configs.PASSWD, db=sys_configs.DB)
@@ -32,14 +32,30 @@ if len(data_list) > 0:
 
     # qty
     # 요일에 따른 파일 선택
-    ptime_file = 't_500_20_'+weekday+'.csv'
-    # 생산량 결정 (job 수) 1 job = 1,000 item
-    # numJobs = int(np.ceil(data_list[0]['JOBS']/configs.NUM_ITEMS_PER_JOB)*configs.NUM_ITEMS_PER_JOB)
-    numItems = data_list[0]['JOBS'] * configs.NUM_ITEMS_PER_JOB
-    print(f'\tptime_file: {ptime_file}')
+    ptime_file = 'production/t_500_20_'+weekday+'.csv'
 
-    sql = """UPDATE PRODUCTIONS SET QTY=%s WHERE UID=%s AND TID=%s AND PDATE=%s"""
-    cur.execute(sql,(numItems, uid, tid, now_date))
+    # 생산량 결정 (job 수) 1 job = 1,000 item
+    # numJobs = int(np.ceil(data_list[0]['JOBS']/configs.NUM_ITEMS_PER_JOB)*configs.NUM_ITEMS_PER_JOB)    
+    numJobs = data_list[0]['JOBS']
+    numItems = numJobs * configs.NUM_ITEMS_PER_JOB
+    print(f'\tptime_file: {ptime_file}')
+    ptimes = pd.read_csv(ptime_file, index_col='JobID', nrows=numJobs)
+
+    # SPT scheduler
+    job_seq = ptimes.sort_values(by=['M1'], ascending=True).index.values
+    schedule = slib.build_schedule(job_seq, ptimes)
+
+    # makespan 계산
+    makespan = schedule.iloc[-1, -1]
+    print(f'\tmakespan: {makespan}, job_seq: {job_seq}')
+
+
+    # gantt 저장
+    fig = slib.plot_gantt_chart(schedule, figsize=(50,30), fontsize=20, outfile='gantt_chart.png')    
+    fig.savefig(f'static/gantt_charts/{uid}_{tid}_{now_date}.png')    
+
+    sql = """UPDATE PRODUCTIONS SET QTY=%s, MAKESPAN=%s, STATUS='PRODUCED' WHERE UID=%s AND TID=%s AND PDATE=%s"""
+    cur.execute(sql,(numItems, makespan, uid, tid, now_date))
 
     sql = """INSERT INTO    INVENTORY(UID, TID, PROD_DATE, QTY)
                     VALUES (%s, %s, %s, %s)
@@ -50,10 +66,16 @@ if len(data_list) > 0:
     sql = """INSERT INTO    LEDGER(UID, TID, DATE, AMOUNT, ACT, DES, SEQ)
                         VALUES (%s, %s, %s, %s, %s, %s, 1)
                         ON DUPLICATE KEY UPDATE AMOUNT=VALUES(AMOUNT), DES=VALUES(DES)"""
-    amount = -1 * (numItems * configs.PROD_COST_UNIT + configs.PROD_SETUP_COST)
+    # 생산비용계산
+    ext_ratio = max(0.0, makespan / configs.MAKESPAN_CAPA - 1.0) # 기준 capa 대비 초과 makespan 
+    prod_cost = numItems * configs.PROD_COST_UNIT
+    ext_cost = ext_ratio/(ext_ratio+1.0) * prod_cost * configs.EXT_PROD_COST
+    labor_cost = int(makespan/100) * configs.LABOR_COST
+    print(f'prod_cost: {prod_cost}, ext_cost: {ext_cost}, labor_cost: {labor_cost}, configs.PROD_SETUP_COST: {configs.PROD_SETUP_COST}, ')
+    amount = -1 * (prod_cost + ext_cost + labor_cost + configs.PROD_SETUP_COST)
     cur.execute(sql,(uid, tid, now_date, amount, 'PROD', str(numItems)+' items'))
 
-    print('\tproduction', uid, tid, numItems, amount)
+    print('\tproduction', numItems, amount)
 
 
 # sales ###########################################
@@ -114,13 +136,23 @@ cur.execute(sql,(uid, tid, now_date, normal_sales*EXT_PRICE_PER_UNIT, 'SALES', s
 cur.execute(sql,(uid, tid, now_date, disc_sales*EXT_PRICE_PER_UNIT, 'SALESD', str(disc_sales)+' discounted * $' + str(EXT_PRICE_PER_UNIT)))
 
 
+# back order
+# 장부
+sql = """INSERT INTO    LEDGER(UID, TID, DATE, AMOUNT, ACT, DES, SEQ)
+                    VALUES (%s, %s, %s, %s, %s, %s, 5)
+                    ON DUPLICATE KEY UPDATE AMOUNT=VALUES(AMOUNT), DES=VALUES(DES)"""
+amount = -1 *  (total_demand * configs.BACK_COST_UNIT)
+cur.execute(sql,(uid, tid, now_date, amount, 'BACK', str(total_demand)+' items'))
+print(f'\tback total_demand(판매후 부족수요):{total_demand}, $:{amount}')
+
+
 # inventory ###########################################
 print(f'inventory results' + ('-'*10))
 
 sql = '''
-    SELECT IFNULL(SUM(QTY), 0) AS INVEN FROM INVENTORY WHERE UID=%s AND TID=%s AND QTY>0 AND PROD_DATE<%s
+    SELECT IFNULL(SUM(QTY), 0) AS INVEN FROM INVENTORY WHERE UID=%s AND TID=%s AND QTY>0
 '''
-cur.execute(sql, (uid, tid, now_date))
+cur.execute(sql, (uid, tid))
 inven = cur.fetchall()[0]['INVEN']
 print('\tinventory processing', uid, tid, inven)
 # 장부
@@ -129,16 +161,6 @@ sql = """INSERT INTO    LEDGER(UID, TID, DATE, AMOUNT, ACT, DES, SEQ)
                     ON DUPLICATE KEY UPDATE AMOUNT=VALUES(AMOUNT), DES=VALUES(DES)"""
 amount = -1 * (inven * configs.INV_COST_UNIT)
 cur.execute(sql,(uid, tid, now_date, amount, 'INVEN', str(inven)+' items'))
-
-# back order
-# 장부
-sql = """INSERT INTO    LEDGER(UID, TID, DATE, AMOUNT, ACT, DES, SEQ)
-                    VALUES (%s, %s, %s, %s, %s, %s, 5)
-                    ON DUPLICATE KEY UPDATE AMOUNT=VALUES(AMOUNT), DES=VALUES(DES)"""
-amount = -1 *  (total_demand * configs.BACK_COST_UNIT)
-cur.execute(sql,(uid, tid, now_date, amount, 'BACK', str(total_demand)+' items'))
-print(f'\tback total_demand(판매후 잔여수요):{total_demand}, $:{amount}')
-
 
 
 conn.commit()

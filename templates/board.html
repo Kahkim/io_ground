@@ -57,29 +57,36 @@ https://doong-e.tistory.com/50
     <table class="table">
         <tr>
             <th>Date</th>
+            <th>Status</th>
             <th>Type</th>
             <!-- <th>Sequence</th> -->
             <th>Jobs</th>
             <th>Qty</th>            
             <th>Makespan</th>
-            <th>Cost</th>
+            <!-- <th>Cost</th>
             <th>Extra cost</th>
-            <th>Total cost</th>
+            <th>Total cost</th> -->
             <th>Gantt chart</th>
         </tr>
         {% for d in sche_list%}
         <tbody>
             <tr>
                 <td>{{d.PDATE}}</td>   
+                <td>{{d.STATUS}}</td>                 
                 <td>{{d.TYPE}}</td>                 
                 <!-- <td>{{d.SCHEDULE}}</td>                  -->                
                 <td>{{ "{:,.0f}".format(d.JOBS | int) }}</td>
                 <td>{{ "{:,.0f}".format(d.QTY | int) }}</td>
+                <td>{{ "{:,.0f}".format(d.MAKESPAN | int) }}</td>
+                <!-- <td>---</td>
                 <td>---</td>
-                <td>---</td>
-                <td>---</td>
-                <td>---</td>
-                <td>---</td>
+                <td>---</td> -->
+                {% if d.STATUS == 'PRODUCED' %}
+                <td><a href='/static/gantt_charts/{{uid}}_{{tid}}_{{d.PDATE}}.png'>View</a></td>>              
+                {% else %}
+                <td></td>
+                {% endif %}                
+                
             </tr>
         </tbody>
         {% endfor %}

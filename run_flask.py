@@ -140,7 +140,7 @@ def board(uid, tid):
 
     # production ###########################
     sql = '''
-        SELECT PDATE, TYPE, SCHEDULE, QTY, JOBS FROM PRODUCTIONS WHERE UID = %s AND TID=%s 
+        SELECT PDATE, STATUS, TYPE, SCHEDULE, QTY, JOBS, MAKESPAN FROM PRODUCTIONS WHERE UID = %s AND TID=%s 
         ORDER BY PDATE DESC LIMIT 10
     '''
     cur.execute(sql, (uid, tid))

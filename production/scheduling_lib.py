@@ -83,4 +83,6 @@ def plot_gantt_chart(schedule, figsize=(50, 38), fontsize=20, outfile='gantt_cha
     plt.yticks(ticks, ticks_names)
     plt.savefig(outfile, bbox_inches='tight')
     plt.grid(axis='x')
-    plt.show()
+    # plt.show()
+
+    return plt
