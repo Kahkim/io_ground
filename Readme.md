@@ -37,14 +37,22 @@
     * for RETRO <-- able to set CUR_DATE for sale, production, and inventoring.
     * 우선구현 필요
 
-# 엔진 돌아갈때 위험요소
+# 해야할 거
+
+## 엔진 돌아갈때 위험요소
+
+* qty 및 job seq 갯수 범위 1~500
 
 * schedule job id seq 안 맞는거
 
-* 로직 문제
-
-# inventory 정보관리
+## inventory 정보관리
 
 * 날짜별 inventory level 확인 가능해야 함
 
 * 생산일별 - 판매일별 정보있어야 함
+
+## 할인 로직 변경
+ 
+ * demand = demand * 할인율
+
+ * price = price * 한인율
