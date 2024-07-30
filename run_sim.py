@@ -45,6 +45,7 @@ if len(data_list) > 0:
     numItems = numJobs * configs.NUM_ITEMS_PER_JOB
     ptimes = pd.read_csv(ptime_file, index_col='JobID', nrows=numJobs)
     makespan = 0
+    setup_cost = 0
     
     # job seq
     job_seq = ptimes.sort_values(by=['M1'], ascending=True).index.values
@@ -52,9 +53,11 @@ if len(data_list) > 0:
     if len(job_seq)>0:
         # SPT scheduler    
         schedule = slib.build_schedule(job_seq, ptimes)
-        print(schedule)
+        # print(schedule)
         # makespan 계산
         makespan = schedule.iloc[-1, -1]
+        # setup cost 계산
+        setup_cost = configs.PROD_SETUP_COST
         # gantt 저장
         fig = slib.plot_gantt_chart(schedule, figsize=(50,30), fontsize=20, outfile='gantt_chart.png')    
         fig.savefig(f'static/gantt_charts/{uid}_{tid}_{now_date}.png')    
@@ -78,11 +81,13 @@ if len(data_list) > 0:
     prod_cost = numItems * configs.PROD_COST_UNIT
     ext_cost = ext_ratio/(ext_ratio+1.0) * prod_cost * configs.EXT_PROD_COST
     labor_cost = int(makespan/100) * configs.LABOR_COST
-    print(f'prod_cost: {prod_cost}, ext_cost: {ext_cost}, labor_cost: {labor_cost}, configs.PROD_SETUP_COST: {configs.PROD_SETUP_COST}, ')
-    amount = -1 * (prod_cost + ext_cost + labor_cost + configs.PROD_SETUP_COST)
+    
+    print(f'''\tprod_cost: {prod_cost}, ext_cost: {ext_cost}, labor_cost: {labor_cost}, 
+          configs.PROD_SETUP_COST: {setup_cost}, ''')
+    amount = -1 * (prod_cost + ext_cost + labor_cost + setup_cost)
     cur.execute(sql,(uid, tid, now_date, amount, 'PROD', str(numItems)+' items'))
 
-    print('\tproduction', numItems, amount)
+    print(f'\t#items: {numItems}, amount: {amount}')
 
 
 # sales ###########################################
@@ -158,7 +163,7 @@ sql = """INSERT INTO    LEDGER(UID, TID, DATE, EXPENSE, ACT, DES, SEQ)
                     ON DUPLICATE KEY UPDATE EXPENSE=VALUES(EXPENSE), DES=VALUES(DES)"""
 amount = -1 *  (total_demand * configs.BACK_COST_UNIT)
 cur.execute(sql,(uid, tid, now_date, amount, 'BACK', str(total_demand)+' items * $' + str(configs.BACK_COST_UNIT)))
-print(f'\tback total_demand(판매후 부족수요):{total_demand}, $:{amount}')
+print(f'\tback total_demand:{total_demand}, $:{amount}')
 
 
 # inventory ###########################################
@@ -174,7 +179,7 @@ sql = '''
 '''
 cur.execute(sql, (uid, tid))
 inven = cur.fetchall()[0]['REMAINS_QTY']
-print('\tinventory processing', uid, tid, inven)
+print(f'\t#items: {inven}')
 # 장부
 sql = """INSERT INTO    LEDGER(UID, TID, DATE, REVENUE, EXPENSE, ACT, DES, SEQ)
                     VALUES (%s, %s, %s, 0, %s, %s, %s, 7)
