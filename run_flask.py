@@ -45,7 +45,7 @@ def main():
 
     cur.execute("""
         select UID, TID, ICON_URL, 
-        (SELECT SUM(AMOUNT) FROM LEDGER AS L WHERE L.UID=T.UID AND L.TID=T.TID) AS CUR_BALANCE
+        (SELECT SUM(REVENUE + EXPENSE) FROM LEDGER AS L WHERE L.UID=T.UID AND L.TID=T.TID) AS CUR_BALANCE
         from TEAMS T
         where STATUS='ACTIVE' order by REG_DATE DESC
     """)
@@ -109,13 +109,6 @@ def board(uid, tid):
     else:
         y_min = (min(df.loc[:,'ACT'].min(), df.loc[:,'FORC'].min()))
         y_max = (max(df.loc[:,'ACT'].max(), df.loc[:,'FORC'].max()))        
-    # df = pd.DataFrame({
-    #     "Dates": ["Apples", "Oranges", "Bananas", "Apples", "Oranges", "Bananas"],
-    #     "Demands": [4, 1, 2, 2, 4, 5],
-    #     # "City": ["SF", "SF", "SF", "Montreal", "Montreal", "Montreal"]
-    # })
-    # fig = go.Figure() 
-    # fig = make_subplots(specs=[[{"secondary_y": True}]])
     fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.02)
     fig.add_trace(go.Scatter(x=df.loc[:,'DAT'].values, y=df.loc[:,'ACT'].values, mode='lines+markers', name='Actual'), row=1, col=1)
     fig.add_trace(go.Scatter(x=df.loc[:,'DAT'].values, y=df.loc[:,'FORC'].values, mode='lines+markers', name='Forecasted'), row=1, col=1)    
@@ -129,13 +122,6 @@ def board(uid, tid):
     fig.update_yaxes(range=[y_min*0.8, y_max*1.05], row=1, col=1)
     fig.update_yaxes(row=2, col=1)
 
-    # fig.update_yaxes(
-    #     scaleanchor = "y",
-    #     scaleratio = 1.5,
-    # )    
-    # fig = px.line(df, x='DAT', y='ACT', markers=True)
-    # fig = px.bar(df, x="Fruit", y="Amount", color="City", barmode="group", width=1200)
-    
     graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)    
 
     # production ###########################
@@ -153,13 +139,14 @@ def board(uid, tid):
     sales_list = cur.fetchall()    
 
     sql = '''
-        SELECT PROD_DATE, QTY FROM INVENTORY WHERE UID = %s AND TID=%s ORDER BY PROD_DATE DESC LIMIT 10
+        SELECT PROD_DATE, PROD_QTY, SALES_DATE, SALES_QTY, LAST_UPDATED 
+        FROM INVENTORY_HIST WHERE UID = %s AND TID=%s ORDER BY PROD_DATE DESC, SALES_DATE ASC
     '''
     cur.execute(sql, (uid, tid))
     inven_list = cur.fetchall()    
 
     sql = '''
-        SELECT DATE,  AMOUNT, ACT, DES, LAST_UPDATED FROM LEDGER WHERE UID = %s AND TID=%s 
+        SELECT DATE, REVENUE, EXPENSE, ACT, DES, LAST_UPDATED FROM LEDGER WHERE UID = %s AND TID=%s 
         ORDER BY DATE DESC, SEQ ASC
     '''
     cur.execute(sql, (uid, tid))

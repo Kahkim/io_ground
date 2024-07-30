@@ -22,6 +22,11 @@ now_date = datetime.datetime.now().strftime('%Y-%m-%d')
 weekday_list = ['mon','tue','wed','thu','fri','sat','sun']
 weekday = (weekday_list[datetime.datetime.now().weekday()])
 
+# 전개 초기화
+sql = """DELETE FROM INVENTORY_HIST WHERE UID=%s AND TID=%s AND date_format(PROD_DATE, '%%Y-%%m-%%d')>=%s"""
+cur.execute(sql,(uid, tid, now_date))
+sql = """DELETE FROM LEDGER WHERE UID=%s AND TID=%s AND date_format(DATE, '%%Y-%%m-%%d')>=%s"""
+cur.execute(sql,(uid, tid, now_date))
 
 # production ###########################################
 print(f'production results' + ('-'*10))
@@ -38,34 +43,36 @@ if len(data_list) > 0:
     # numJobs = int(np.ceil(data_list[0]['JOBS']/configs.NUM_ITEMS_PER_JOB)*configs.NUM_ITEMS_PER_JOB)    
     numJobs = data_list[0]['JOBS']
     numItems = numJobs * configs.NUM_ITEMS_PER_JOB
-    print(f'\tptime_file: {ptime_file}')
     ptimes = pd.read_csv(ptime_file, index_col='JobID', nrows=numJobs)
-
-    # SPT scheduler
+    makespan = 0
+    
+    # job seq
     job_seq = ptimes.sort_values(by=['M1'], ascending=True).index.values
-    schedule = slib.build_schedule(job_seq, ptimes)
 
-    # makespan 계산
-    makespan = schedule.iloc[-1, -1]
-    print(f'\tmakespan: {makespan}, job_seq: {job_seq}')
+    if len(job_seq)>0:
+        # SPT scheduler    
+        schedule = slib.build_schedule(job_seq, ptimes)
+        print(schedule)
+        # makespan 계산
+        makespan = schedule.iloc[-1, -1]
+        # gantt 저장
+        fig = slib.plot_gantt_chart(schedule, figsize=(50,30), fontsize=20, outfile='gantt_chart.png')    
+        fig.savefig(f'static/gantt_charts/{uid}_{tid}_{now_date}.png')    
 
-
-    # gantt 저장
-    fig = slib.plot_gantt_chart(schedule, figsize=(50,30), fontsize=20, outfile='gantt_chart.png')    
-    fig.savefig(f'static/gantt_charts/{uid}_{tid}_{now_date}.png')    
+    print(f'\tptime_file: {ptime_file}, makespan: {makespan}, job_seq: {job_seq}')
 
     sql = """UPDATE PRODUCTIONS SET QTY=%s, MAKESPAN=%s, STATUS='PRODUCED' WHERE UID=%s AND TID=%s AND PDATE=%s"""
     cur.execute(sql,(numItems, makespan, uid, tid, now_date))
 
-    sql = """INSERT INTO    INVENTORY(UID, TID, PROD_DATE, QTY)
+    sql = """INSERT INTO    INVENTORY_HIST(UID, TID, PROD_DATE, PROD_QTY)
                     VALUES (%s, %s, %s, %s)
-                    ON DUPLICATE KEY UPDATE QTY=VALUES(QTY)"""
+                    ON DUPLICATE KEY UPDATE PROD_QTY=VALUES(PROD_QTY)"""
     cur.execute(sql,(uid, tid, now_date, numItems))
 
     # 장부
-    sql = """INSERT INTO    LEDGER(UID, TID, DATE, AMOUNT, ACT, DES, SEQ)
-                        VALUES (%s, %s, %s, %s, %s, %s, 1)
-                        ON DUPLICATE KEY UPDATE AMOUNT=VALUES(AMOUNT), DES=VALUES(DES)"""
+    sql = """INSERT INTO    LEDGER(UID, TID, DATE, REVENUE, EXPENSE, ACT, DES, SEQ)
+                        VALUES (%s, %s, %s, 0, %s, %s, %s, 1)
+                        ON DUPLICATE KEY UPDATE REVENUE=VALUES(REVENUE), EXPENSE=VALUES(EXPENSE), DES=VALUES(DES)"""
     # 생산비용계산
     ext_ratio = max(0.0, makespan / configs.MAKESPAN_CAPA - 1.0) # 기준 capa 대비 초과 makespan 
     prod_cost = numItems * configs.PROD_COST_UNIT
@@ -83,9 +90,9 @@ print(f'sales results' + ('-'*10))
 
 total_demand = 0
 total_sales = 0
-normal_sales = 0
-disc_sales = 0
-EXT_PRICE_PER_UNIT = 0
+# normal_sales = 0
+# disc_sales = 0
+FIN_PRICE_PER_UNIT = configs.PRICE_PER_UNIT
 
 sql = """SELECT D.DATE as DAT, D.PRICE as DEMAND, IFNULL(S.DISC_RATIO, 0) AS DISC_RATIO, 
 		 		IFNULL(ROUND(D.PRICE*S.DISC_RATIO), 0) AS EXT_DEMAND
@@ -100,49 +107,57 @@ if len(data_list) > 0:
     total_demand = int(data_list[0]['DEMAND'] + data_list[0]['EXT_DEMAND'])
     
     sql = '''
-        SELECT PROD_DATE, QTY FROM INVENTORY WHERE UID=%s AND TID=%s AND QTY>0 AND
-                date_format(PROD_DATE, '%%Y-%%m-%%d') <= %s ORDER BY PROD_DATE ASC
-    '''
+        SELECT PROD_DATE, PROD_QTY, SUM(SALES_QTY), PROD_QTY-SUM(SALES_QTY) AS REMAINS_QTY 
+        from INVENTORY_HIST 
+        WHERE UID=%s AND TID=%s AND date_format(PROD_DATE, '%%Y-%%m-%%d')<=%s
+        GROUP BY UID, TID, PROD_DATE
+        HAVING REMAINS_QTY > 0
+        ORDER BY PROD_DATE ASC '''
     cur.execute(sql, (uid, tid, now_date))
     inven_list = cur.fetchall()
     print('\tinventory', uid, tid, inven_list)
-    
-    for il in inven_list:        
-        sales_qty = min(total_demand, il['QTY'])
-        sql = '''
-            UPDATE INVENTORY SET QTY=%s WHERE UID=%s AND TID=%s AND PROD_DATE=%s
-        '''        
-        cur.execute(sql, (il['QTY']-sales_qty, uid, tid, il['PROD_DATE']))
-        total_demand = total_demand - sales_qty
-        total_sales = total_sales + sales_qty
-        # print(sales_qty, il['QTY']-sales_qty, il['PROD_DATE'], total_demand)
-        if total_demand<=0:
-            break    
-    # total_demand는 총수요(일반+할일)에서 판매 못하고 남은 수요 반영
 
     # 가격 계산
-    EXT_PRICE_PER_UNIT = round((1-data_list[0]['DISC_RATIO'])*configs.PRICE_PER_UNIT)
-    # 최종 판매된 일반 / 할인 제품 수
-    normal_sales = min(data_list[0]['DEMAND'], total_sales)
-    disc_sales = max(0, total_sales - data_list[0]['DEMAND'])
+    FIN_PRICE_PER_UNIT = round((1-data_list[0]['DISC_RATIO'])*configs.PRICE_PER_UNIT)
 
-# 장부
-sql = """INSERT INTO    LEDGER(UID, TID, DATE, AMOUNT, ACT, DES, SEQ)
-                    VALUES (%s, %s, %s, %s, %s, %s, 3)
-                    ON DUPLICATE KEY UPDATE AMOUNT=VALUES(AMOUNT), DES=VALUES(DES)"""
+    for il in inven_list:        
+        sales_qty = min(total_demand, il['REMAINS_QTY']) # inven에서 꺼내는 수
+        sql = '''
+            INSERT INTO INVENTORY_HIST(UID, TID, PROD_DATE, PROD_QTY, SALES_DATE, SALES_QTY)
+            VALUES (%s, %s, %s, 0, %s, %s)
+            ON DUPLICATE KEY UPDATE SALES_QTY=VALUES(SALES_QTY)
+        '''        
+        cur.execute(sql, (uid, tid, il['PROD_DATE'], now_date, sales_qty))
+        total_demand = total_demand - sales_qty # total_demand는 총수요(일반+할일)에서 판매 못하고 남은 수요 반영
+        total_sales = total_sales + sales_qty # 현재까지 inven에서 꺼낸 총 수
+        # print(sales_qty, il['QTY']-sales_qty, il['PROD_DATE'], total_demand)
+        
+        # 최종 판매된 일반 / 할인 제품 수
+        # normal_sales = min(data_list[0]['DEMAND'], total_sales)
+        # disc_sales = max(0, total_sales - data_list[0]['DEMAND'])        
 
-print(f'\tnormal_sales:{normal_sales}, disc_sales:{disc_sales}, EXT_PRICE_PER_UNIT:{EXT_PRICE_PER_UNIT}')
-cur.execute(sql,(uid, tid, now_date, normal_sales*EXT_PRICE_PER_UNIT, 'SALES', str(normal_sales)+' items * $' + str(EXT_PRICE_PER_UNIT)))
-cur.execute(sql,(uid, tid, now_date, disc_sales*EXT_PRICE_PER_UNIT, 'SALESD', str(disc_sales)+' discounted * $' + str(EXT_PRICE_PER_UNIT)))
+        if total_demand<=0:
+            break    
+    
+    # 장부
+    sql = """INSERT INTO    LEDGER(UID, TID, DATE, REVENUE, ACT, DES, SEQ)
+                        VALUES (%s, %s, %s, %s, %s, %s, 3)
+                        ON DUPLICATE KEY UPDATE REVENUE=VALUES(REVENUE), DES=VALUES(DES)"""
 
+    print(f'\ttotal_sales:{total_sales}, total_demand:{total_demand}, FIN_PRICE_PER_UNIT:{FIN_PRICE_PER_UNIT}')
+    cur.execute(sql,(uid, tid, now_date, 
+                        total_sales*FIN_PRICE_PER_UNIT, 
+                        f'SALES', 
+                        str(total_sales)+' items * $' + str(FIN_PRICE_PER_UNIT)))
+    
 
 # back order
 # 장부
-sql = """INSERT INTO    LEDGER(UID, TID, DATE, AMOUNT, ACT, DES, SEQ)
+sql = """INSERT INTO    LEDGER(UID, TID, DATE, EXPENSE, ACT, DES, SEQ)
                     VALUES (%s, %s, %s, %s, %s, %s, 5)
-                    ON DUPLICATE KEY UPDATE AMOUNT=VALUES(AMOUNT), DES=VALUES(DES)"""
+                    ON DUPLICATE KEY UPDATE EXPENSE=VALUES(EXPENSE), DES=VALUES(DES)"""
 amount = -1 *  (total_demand * configs.BACK_COST_UNIT)
-cur.execute(sql,(uid, tid, now_date, amount, 'BACK', str(total_demand)+' items'))
+cur.execute(sql,(uid, tid, now_date, amount, 'BACK', str(total_demand)+' items * $' + str(configs.BACK_COST_UNIT)))
 print(f'\tback total_demand(판매후 부족수요):{total_demand}, $:{amount}')
 
 
@@ -150,17 +165,22 @@ print(f'\tback total_demand(판매후 부족수요):{total_demand}, $:{amount}')
 print(f'inventory results' + ('-'*10))
 
 sql = '''
-    SELECT IFNULL(SUM(QTY), 0) AS INVEN FROM INVENTORY WHERE UID=%s AND TID=%s AND QTY>0
+    SELECT SUM(AA.REMAINS_QTY) as REMAINS_QTY FROM (
+    SELECT PROD_DATE, PROD_QTY, SUM(SALES_QTY), PROD_QTY-SUM(SALES_QTY) AS REMAINS_QTY 
+    from INVENTORY_HIST 
+    WHERE UID=%s AND TID=%s
+    GROUP BY UID, TID, PROD_DATE
+    ) AA    
 '''
 cur.execute(sql, (uid, tid))
-inven = cur.fetchall()[0]['INVEN']
+inven = cur.fetchall()[0]['REMAINS_QTY']
 print('\tinventory processing', uid, tid, inven)
 # 장부
-sql = """INSERT INTO    LEDGER(UID, TID, DATE, AMOUNT, ACT, DES, SEQ)
-                    VALUES (%s, %s, %s, %s, %s, %s, 7)
-                    ON DUPLICATE KEY UPDATE AMOUNT=VALUES(AMOUNT), DES=VALUES(DES)"""
+sql = """INSERT INTO    LEDGER(UID, TID, DATE, REVENUE, EXPENSE, ACT, DES, SEQ)
+                    VALUES (%s, %s, %s, 0, %s, %s, %s, 7)
+                    ON DUPLICATE KEY UPDATE REVENUE=VALUES(REVENUE), EXPENSE=VALUES(EXPENSE), DES=VALUES(DES)"""
 amount = -1 * (inven * configs.INV_COST_UNIT)
-cur.execute(sql,(uid, tid, now_date, amount, 'INVEN', str(inven)+' items'))
+cur.execute(sql,(uid, tid, now_date, amount, 'INVEN', str(inven)+' items * $' + str(configs.INV_COST_UNIT)))
 
 
 conn.commit()

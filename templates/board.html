@@ -81,8 +81,8 @@ https://doong-e.tistory.com/50
                 <!-- <td>---</td>
                 <td>---</td>
                 <td>---</td> -->
-                {% if d.STATUS == 'PRODUCED' %}
-                <td><a target='_blank' href='/static/gantt_charts/{{uid}}_{{tid}}_{{d.PDATE}}.png'>View</a></td>>              
+                {% if d.STATUS == 'PRODUCED' and d.QTY > 0 %}
+                <td><a target='_blank' href='/static/gantt_charts/{{uid}}_{{tid}}_{{d.PDATE}}.png'>View</a></td>
                 {% else %}
                 <td></td>
                 {% endif %}                
@@ -112,13 +112,19 @@ https://doong-e.tistory.com/50
     <table class="table">
         <tr>
             <th>Production date</th>
-            <th>Qty</th>
+            <th>Production qty</th>
+            <th>Sales date</th>
+            <th>Sales qty</th>
+            <th>Updated</th>
         </tr>
         {% for d in inven_list%}
         <tbody>
             <tr>
                 <td>{{d.PROD_DATE}}</td>                    
-                <td>{{ "{:,.0f}".format(d.QTY | int) }}</td>
+                <td>{{ "{:,.0f}".format(d.PROD_QTY | int) }}</td>
+                <td>{{d.SALES_DATE}}</td>                    
+                <td>{{ "{:,.0f}".format(d.SALES_QTY | int) }}</td>
+                <td>{{d.LAST_UPDATED}}</td>
             </tr>
         </tbody>
         {% endfor %}
@@ -129,7 +135,8 @@ https://doong-e.tistory.com/50
     <table class="table">
         <tr>
             <th>Date</th>
-            <th>$</th>
+            <th>Revenue</th>
+            <th>Expense</th>
             <th>Action</th>
             <th>Description</th>
             <th>Updated</th>
@@ -138,7 +145,8 @@ https://doong-e.tistory.com/50
         <tbody>
             <tr>
                 <td>{{d.DATE}}</td>                    
-                <td>{{ "${:,.0f}".format(d.AMOUNT | int) }}</td>
+                <td>{{ "${:,.0f}".format(d.REVENUE | int) }}</td>
+                <td>{{ "${:,.0f}".format(d.EXPENSE | int) }}</td>
                 <td>{{d.ACT}}</td>
                 <td>{{d.DES}}</td>
                 <td>{{d.LAST_UPDATED}}</td>
