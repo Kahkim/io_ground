@@ -91,11 +91,18 @@ machines = df_t.m_tolist()
 # plt.rcParams.update({'font.size': 20})
 # df_t.plot_gantt_chart()
 
-import datetime
-import numpy as np
-now_date = datetime.datetime.now().strftime('%Y-%m-%d')
-weekday = ['mon','tue','wed','thu','fri','sat','sun']
-print(weekday[datetime.datetime.now().weekday()])
+# import datetime
+# import numpy as np
+now_date = datetime.datetime.now()
+print(now_date)
+# weekday = ['mon','tue','wed','thu','fri','sat','sun']
+# date_time_obj = datetime.datetime.strptime(now_date, '%Y-%m-%d')
+# print(weekday[date_time_obj.weekday()])
 
-x = 32999
-print(int(np.ceil(x/1000)*1000))
+# x = 32999
+# print(int(np.ceil(x/1000)*1000))
+
+import ast
+job_seq_str = '1,2, 3 ,  4 ,  5    '
+job_seq = list(ast.literal_eval(job_seq_str))
+print(job_seq)

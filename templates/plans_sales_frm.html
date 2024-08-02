@@ -31,10 +31,10 @@
         </div>
     </p>
     <p>
-        <h1>Planing form for {{uid}} / {{tid}} from {{next_week_days[0]}} to {{next_week_days[-1]}}</h1>        
+        <h1>Sales planing form for {{uid}} / {{tid}} on {{planning_date}}</h1>        
     </p>
 
-    <form action="/plans_c/{{uid}}/{{tid}}" method="POST">
+    <form action="/plans_sales/{{uid}}/{{tid}}" method="POST">
         <p>
             * Previous numbers would be overwritten <br>
             * Do not regist between 6pm to 6am due to a backgound processing
@@ -45,37 +45,20 @@
             <tr>
                 <th>Planning dates</th>
                 <!-- <th>Demand</th> -->
-                <th>Production</th>
+                <!-- <th>Production</th> -->
                 <th>Sales discount rate</th>
             </tr>
             <tr>
                 <td>-</td>
-                <!-- <td>* Put integer numbers only othersize the values set to 0</td> -->
-                <td>
-                    <p>
-                        * 1 job = 1,000 items <br>
-                        * Max job is 500 <br>
-                    </p>
-                    <p>
-                    For using job sequence,<br>
-                        * Scheduling by using your custom scheduler <br>
-                        * Put a sequence of job IDs seperated by comma                     
-                    </p>
-                    <p>
-                    For using job qty,<br>
-                        * Scheduling by using SPT scheduler<br>
-                        * Put integer numbers only othersize the values set to 0                     
-                    </p>
-                </td>
+                <!-- <td>* Put integer numbers only othersize the values set to 0</td> -->                
                 <td>* Put float numbers only othersize the values set to 0</td>
             </tr>
-
-            {% for i in range(next_week_days | length)%}
+            
             <tbody>
                 <tr>
-                    <td>{{next_week_days[i]}}</td>                    
-                    <!-- <td><input type="text" name="demand_fore_d_{{i}}" value="0"></td> -->
-                    <td>
+                    <td>{{planning_date}}</td>                    
+                    <td><input type="text" name="sales_d_1" value="0"></td>
+                    <!-- <td>
                         <input type="radio" name="sche_type_d_{{i}}" value="seq" Checked="True">
                         Job sequence:
                         <br>
@@ -84,10 +67,10 @@
                         <input type="radio" name="sche_type_d_{{i}}" value="qty">
                         Job qty : <input type="text" id="sche_qty_d_{{i}}" name="sche_qty_d_{{i}}" size="10" disabled="disabled">                        
                     </td>
-                    <td><input type="text" name="sales_d_{{i}}" value="0"></td>
+                    <td><input type="text" name="sales_d_{{i}}" value="0"></td> -->
                 </tr>
             </tbody>
-            {% endfor %}
+
         </table>
 
         <h2>Auth key</h2>

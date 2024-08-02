@@ -2,6 +2,7 @@ import time
 import datetime
 import pandas as pd
 import numpy as np   
+import ast
 
 import sys, os
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
@@ -17,10 +18,14 @@ cur = conn.cursor(pymysql.cursors.DictCursor)
 
 uid = 'DGU'
 tid = 'T1'
+# now_date = '2024-08-01'
+now_date = None
 
-now_date = datetime.datetime.now().strftime('%Y-%m-%d')
+if now_date == None:
+    now_date = datetime.datetime.now().strftime('%Y-%m-%d')
 weekday_list = ['mon','tue','wed','thu','fri','sat','sun']
-weekday = (weekday_list[datetime.datetime.now().weekday()])
+date_time_obj = datetime.datetime.strptime(now_date, '%Y-%m-%d')
+weekday = weekday_list[date_time_obj.weekday()]
 
 # 전개 초기화
 sql = """DELETE FROM INVENTORY_HIST WHERE UID=%s AND TID=%s AND date_format(PROD_DATE, '%%Y-%%m-%%d')>=%s"""
@@ -39,17 +44,24 @@ if len(data_list) > 0:
     # 요일에 따른 파일 선택
     ptime_file = 'production/t_500_20_'+weekday+'.csv'
 
-    # 생산량 결정 (job 수) 1 job = 1,000 item
-    # numJobs = int(np.ceil(data_list[0]['JOBS']/configs.NUM_ITEMS_PER_JOB)*configs.NUM_ITEMS_PER_JOB)    
-    numJobs = data_list[0]['JOBS']
-    numItems = numJobs * configs.NUM_ITEMS_PER_JOB
-    ptimes = pd.read_csv(ptime_file, index_col='JobID', nrows=numJobs)
+    # 지표
     makespan = 0
     setup_cost = 0
-    
-    # job seq
-    job_seq = ptimes.sort_values(by=['M1'], ascending=True).index.values
 
+    # job 수 / job seq, ptime 중 job 수 만큼
+    if data_list[0]['TYPE'] == 'qty':
+        numJobs = data_list[0]['JOBS']
+        ptimes = pd.read_csv(ptime_file, index_col='JobID', nrows=numJobs)
+        job_seq = ptimes.sort_values(by=['M1'], ascending=True).index.values
+    else:
+        job_seq_str = data_list[0]['SCHEDULE']
+        job_seq = list(ast.literal_eval(job_seq_str))
+        numJobs = len(job_seq)
+        ptimes = pd.read_csv(ptime_file, index_col='JobID', nrows=numJobs)
+
+    # 생산량 결정 (job 수) 1 job = 1,000 item    
+    numItems = numJobs * configs.NUM_ITEMS_PER_JOB        
+    
     if len(job_seq)>0:
         # SPT scheduler    
         schedule = slib.build_schedule(job_seq, ptimes)
@@ -162,8 +174,8 @@ sql = """INSERT INTO    LEDGER(UID, TID, DATE, EXPENSE, ACT, DES, SEQ)
                     VALUES (%s, %s, %s, %s, %s, %s, 5)
                     ON DUPLICATE KEY UPDATE EXPENSE=VALUES(EXPENSE), DES=VALUES(DES)"""
 amount = -1 *  (total_demand * configs.BACK_COST_UNIT)
-cur.execute(sql,(uid, tid, now_date, amount, 'BACK', str(total_demand)+' items * $' + str(configs.BACK_COST_UNIT)))
-print(f'\tback total_demand:{total_demand}, $:{amount}')
+cur.execute(sql,(uid, tid, now_date, amount, 'STOCKOUT', str(total_demand)+' items * $' + str(configs.BACK_COST_UNIT)))
+print(f'\tstockout total_demand:{total_demand}, $:{amount}')
 
 
 # inventory ###########################################

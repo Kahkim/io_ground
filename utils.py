@@ -1,4 +1,5 @@
 import datetime
+import math
 
 def next_week_days(d):
     # printing original date
@@ -19,3 +20,12 @@ def next_week_days(d):
     ret.append((res+datetime.timedelta(days=3)).strftime('%Y-%m-%d'))
     ret.append((res+datetime.timedelta(days=4)).strftime('%Y-%m-%d'))
     return ret
+
+def is_number(v):
+    r = True
+    try:
+        v = float(v)
+        r = False if math.isnan(v) else True
+    except:
+        r = False
+    return r

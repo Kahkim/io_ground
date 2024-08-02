@@ -7,6 +7,7 @@ import pymysql.cursors
 
 import datetime
 import pandas as pd
+import ast
 
 import json
 import plotly
@@ -127,13 +128,13 @@ def board(uid, tid):
     # production ###########################
     sql = '''
         SELECT PDATE, STATUS, TYPE, SCHEDULE, QTY, JOBS, MAKESPAN FROM PRODUCTIONS WHERE UID = %s AND TID=%s 
-        ORDER BY PDATE DESC LIMIT 10
+        ORDER BY PDATE DESC LIMIT 30
     '''
     cur.execute(sql, (uid, tid))
     sche_list = cur.fetchall()
 
     sql = '''
-        SELECT PDATE, DISC_RATIO FROM SALES WHERE UID = %s AND TID=%s ORDER BY PDATE DESC LIMIT 10
+        SELECT PDATE, DISC_RATIO FROM SALES WHERE UID = %s AND TID=%s ORDER BY PDATE DESC LIMIT 30
     '''
     cur.execute(sql, (uid, tid))
     sales_list = cur.fetchall()    
@@ -192,7 +193,7 @@ def plans_c(uid, tid):
     demand_for.append(request.form['demand_fore_d_3'])
     demand_for.append(request.form['demand_fore_d_4'])
 
-    print(demand_for)
+    # print(demand_for)
 
     for i in range(len(planning_dates)):
         sql = """INSERT INTO    DEMAND_FOR(UID, TID, PDATE, DEMAND_FOR)
@@ -216,9 +217,10 @@ def plans_c(uid, tid):
         sche_qty = -1
         if request.form['sche_type_d_'+str(i)]=='seq':
             sche_seq = request.form['sche_seq_d_'+str(i)]
+            sche_qty = len(ast.literal_eval(sche_seq))            
         else:
             sche_qty = request.form['sche_qty_d_'+str(i)]
-            sche_qty =  sche_qty if sche_qty.isnumeric() else '0'
+            sche_qty = sche_qty if sche_qty.isnumeric() else '0'
 
         cur.execute(sql,(uid, tid, planning_dates[i], request.form['sche_type_d_'+str(i)], 
                          sche_seq, sche_qty))
@@ -237,6 +239,45 @@ def plans_c(uid, tid):
     g.db.commit()  
     return redirect(url_for('board', uid=uid, tid=tid))
 
+
+@app.route('/plans_sales_frm/<uid>/<tid>', methods=['GET'])
+def plans_sales_frm(uid, tid): 
+    # d1 = datetime.datetime.now() + datetime.timedelta(days=configs.PLANNING_LEADTIME)    
+    # d1 = d1.strftime('%Y-%m-%d') + ' ' + d1.strftime('%a')
+
+    planning_date = (datetime.datetime.now() + datetime.timedelta(days=1)).strftime('%Y-%m-%d')
+
+    return render_template('plans_sales_frm.html', uid=uid, tid=tid, planning_date=planning_date)
+
+
+@app.route('/plans_sales/<uid>/<tid>', methods=['POST'])
+def plans_sales(uid, tid):
+    error = None
+
+    cur = g.db.cursor(pymysql.cursors.DictCursor)    
+
+    # auth key 확인
+    auth_key = request.form['auth_key']
+    # print(uid, tid)
+    cur.execute("select UID, TID from TEAMS where STATUS='ACTIVE' and UID=%s and TID=%s and AUTH_KEY=%s", (uid, tid, auth_key))
+    data_list = cur.fetchall()
+    if len(data_list)<1:        
+        return redirect(url_for('error_page', err_msg='UID, TID is not valid or auth key is not correct.'))
+
+    planning_date = datetime.datetime.now() + datetime.timedelta(days=1) 
+
+    # sales 처리 ########################
+    sql = """INSERT INTO    SALES(UID, TID, PDATE, DISC_RATIO)
+                            VALUES (%s, %s, %s, %s)
+                            ON DUPLICATE KEY UPDATE DISC_RATIO=VALUES(DISC_RATIO)"""
+
+    i = 1
+    d =  request.form['sales_d_'+str(i)] if utils.is_number(request.form['sales_d_'+str(i)]) else '0'
+    cur.execute(sql,(uid, tid, planning_date, d))
+    ################################################
+
+    g.db.commit()  
+    return redirect(url_for('board', uid=uid, tid=tid))
 
 @app.route('/error_page', methods=['GET', 'POST']) # 메인 로그인 화면
 def error_page():
